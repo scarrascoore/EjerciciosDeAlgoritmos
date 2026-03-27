@@ -93,7 +93,7 @@ Según Arteaga(2023) define el algoritmo como una secuencia de pasos lógicos, o
 
 ---
 
-## Programas y Lenguajes de programación
+## Programa y Lenguajes de programación
 1. Programa: Conjunto de instrucciones finitos que traduce la computadora para resolver problemas.
 2. Lenguajes de programación: Es un sistema de reglas y palabras clave que usamos para darle instrucciones a una computadora y hacer que ejecute tareas, resuelva problemas o construya programas.
 
@@ -111,3 +111,12 @@ Según Arteaga(2023) define el algoritmo como una secuencia de pasos lógicos, o
 
 ---
 
+## CONTENIDO
+## Enfoque de este espacio
+Este espacio ha sido organizado para aprender algoritmos de manera progresiva, comenzando por los fundamentos y avanzando hacia ejercicios y problemas de mayor dificultad. La idea es construir una base lógica sólida antes de abordar retos más complejos.
+
+## Autor
+
+**SHELVY CARRASCO ORÉ**
+- GitHub: [@scarrascoore](https://github.com/scarrascoore)
+- LinkedIn: [Shelvycarrascoore](https://linkedin.com/in/shelvycarrascoore)
