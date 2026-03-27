@@ -9,7 +9,7 @@ Se le define asi al grupo de constantes, variables y operadores.
 
 **_Ejemplo:_**
 
-(7 _ 2 / 5 > 2 + 5 _ 9) AND (5 _ 3) = (25 < 9 _ 2)
+(( 7 + 2 / 5 > 2 + 5 * 9 ) AND ( 5 * 3 > 25)) OR ( 9 * 2  = 2 * 8 )
 
 # OPERADORES
 
@@ -86,9 +86,8 @@ Son todos aquellos simbolos que utilizaremos para crear las expresiones logicas
 </table>
 
 ---
-<br>
 
-# Operadores relacionales
+## Operadores relacionales y Operadores lógicos
 
 <table>
   <tr>
@@ -175,3 +174,100 @@ Son todos aquellos simbolos que utilizaremos para crear las expresiones logicas
     </td>
 </tr>
 </table>
+
+---
+
+## Tabla de verdad de operadores lógicos
+
+<table>
+    <tr>
+        <th align="center">P</th>
+        <th align="center">Q</th>
+        <th align="center">P v Q</th>
+        <th align="center">P ^ Q</th>
+        <th colspan="4">~P</th>    
+    </tr>
+    <tr>
+        <td align="center">V</td>
+        <td align="center">V</td>
+        <td align="center">V</td>
+        <td align="center">V</td>
+        <td align="center">F</td>
+    </tr>
+    <tr>
+        <td align="center">V</td>
+        <td align="center">F</td>
+        <td align="center">V</td>
+        <td align="center">F</td>
+        <td align="center">F</td>
+    </tr>
+    <tr>
+        <td align="center">F</td>
+        <td align="center">V</td>
+        <td align="center">V</td>
+        <td align="center">F</td>
+        <td align="center">V</td>
+    </tr>
+    <tr>
+        <td align="center">F</td>
+        <td align="center">F</td>
+        <td align="center">F</td>
+        <td align="center">F</td>
+        <td align="center">V</td>
+    </tr>
+</table>
+
+---
+
+# Prioridad de los operadores
+### 1. Paréntesis ( )
+### 2. Potenciación ( ↑ ) 
+### 3. Multiplicación ( * ) y división real ( / )
+### 4. División entera ( \ ) y Operación módulo ( MOD )
+### 5. Adición ( + ) y Sustracción ( - )
+### 3. Operadores relacionales
+### 4. NOT
+### 5. AND
+### 6. OR
+
+> [!IMPORTANT]
+> Las expresiones lógicas se ejecutan siempre de izquierda a derecha en caso se encuentren más de dos operadores similares.
+
+_**Ejemplo**_
+
+Ejemplo 1: 
+
+5 + <u>2 * 9</u> / 3 * 2 - 6
+<br>
+5 + <u>18 / 3</u> * 2 - 6
+<br>
+5 + <u>6 * 2</u> - 6
+<br>
+<u>5 + 12</u> - 6
+<br>
+<u>17 - 6</u>
+<br>
+11
+
+Ejemplo 2: 
+
+2 + 5 < 9 AND 4 = 2 * 4 - 3
+<br>
+7 < 9 AND 4 = 8 - 3
+<br>
+7 < 9 AND 4 = 5
+<br>
+V AND F
+<br>
+F
+
+Ejemplo 3: 
+
+3 * 10 \ 9 > 2 * 4 - 3
+<br>
+30 \ 9 > 8 - 3
+<br>
+3 > 5
+<br>
+F
+
