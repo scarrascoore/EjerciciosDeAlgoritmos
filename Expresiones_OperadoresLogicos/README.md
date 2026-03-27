@@ -19,75 +19,64 @@ Son todos aquellos simbolos que utilizaremos para crear las expresiones logicas
 
 ## Tipos de operadores
 
-<style>
-    table{
-        border-collapse: collapse;
-        width: 100%
-    }
-  th, td {
-    text-align: center;
-    padding: 6px;
-  }
-</style>
-
 <table border="0">
   <tr> 
-    <th>OPERADOR</th>
-    <th>ACCION</th>
-    <th>Expresión</th>
-    <th>Resultado</th>
-    <th>Observación</th>
+    <th align= "center">OPERADOR</th>
+    <th align= "center">ACCION</th>
+    <th align= "center">Expresión</th>
+    <th align= "center">Resultado</th>
+    <th align= "center">Observación</th>
   </tr>
 
   <tr>
-    <td>*</td> 
-    <td>Multiplicación</td>
-    <td> 7 * 2 </td>
-    <td>14</td>
+    <td align= "center">*</td> 
+    <td align= "center">Multiplicación</td>
+    <td align= "center"> 7 * 2 </td>
+    <td align= "center">14</td>
   </tr>
 
   <tr>
-    <td>/</td> 
-    <td> División Real</td>
-    <td> 7 / 2 </td>
-    <td>3.5</td>
-    <td>Se obtiene el cociente incluyendo los decimales</td>
+    <td align= "center">/</td> 
+    <td align= "center"> División Real</td>
+    <td align= "center"> 7 / 2 </td>
+    <td align= "center">3.5</td>
+    <td align= "center">Se obtiene el cociente incluyendo los decimales</td>
   </tr>
 
   <tr>
-    <td>\</td> 
-    <td>División Entera</td>
-    <td> 7 \ 2 </td>
-    <td>3</td>
-    <td>Se obtiene la parte entera del cociente</td>
+    <td align= "center">\</td> 
+    <td align= "center">División Entera</td>
+    <td align= "center"> 7 \ 2 </td>
+    <td align= "center">3</td>
+    <td align= "center">Se obtiene la parte entera del cociente</td>
   </tr>  
   
   <tr>
-    <td>MOD</td> 
-    <td>Residuo de división</td>
-    <td> 7 MOD 2 </td>
-    <td>1</td>
-    <td>Se obtiene el residuo de la division</td>
+    <td align= "center">MOD</td> 
+    <td align= "center">Residuo de división</td>
+    <td align= "center"> 7 MOD 2 </td>
+    <td align= "center">1</td>
+    <td align= "center">Se obtiene el residuo de la division</td>
   </tr>
 
   <tr>
-    <td>+</td> 
-    <td>Adición</td>
-    <td> 7 + 2 </td>
-    <td>9</td>
+    <td align= "center">+</td> 
+    <td align= "center">Adición</td>
+    <td align= "center"> 7 + 2 </td>
+    <td align= "center">9</td>
   </tr>  
   
   <tr>
-    <td>-</td> 
-    <td>Sustracción</td>
-    <td> 7 - 5 </td>
-    <td>5</td>
+    <td align= "center">-</td> 
+    <td align= "center">Sustracción</td>
+    <td align= "center"> 7 - 5 </td>
+    <td align= "center">5</td>
   </tr> 
   
   <tr>
-    <td>↑</td> 
-    <td>Potenciación</td>
-    <td> 7 ↑ 2 </td>
-    <td>49</td>
+    <td align= "center">↑</td> 
+    <td align= "center">Potenciación</td>
+    <td align= "center"> 7 ↑ 2 </td>
+    <td align= "center">49</td>
   </tr>  
 </table>
