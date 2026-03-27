@@ -55,7 +55,7 @@ Según Arteaga(2023) define el algoritmo como una secuencia de pasos lógicos, o
 **1. Pseudocódigo:** Es una forma de escribir la lógica de un algoritmo con palabras sencillas y ordenadas, parecida a un programa, pero sin preocuparse todavía por un lenguaje de programación específico.
 
 <div>
-  <img src="./imagenes/PSC.png" width=80% alt="header"></h1>
+  <img src="./imagenes/Pseudocodigo.png" width=80% alt="header"></h1>
 </div>
 
 ---
@@ -63,7 +63,7 @@ Según Arteaga(2023) define el algoritmo como una secuencia de pasos lógicos, o
 **2. Diagrama de flujo:** Es la representación gráfica de un algoritmo mediante figuras y flechas que muestran el orden de las acciones, decisiones y resultados.
 
 <div>
-  <img src="./imagenes/DF.png" width=80% alt="header"></h1>
+  <img src="./imagenes/DiagramaDeFLujo.png" width=80% alt="header"></h1>
 </div>
 
 
@@ -72,7 +72,7 @@ Según Arteaga(2023) define el algoritmo como una secuencia de pasos lógicos, o
 **3. Diagrama Nassi-Shneiderman:** Es una forma visual de organizar un algoritmo en bloques, mostrando de manera clara la secuencia, las decisiones y las repeticiones, sin usar flechas como en el diagrama de flujo.
 
 <div>
-  <img src="./imagenes/DIAGRAMA NASSI-SHNEIDERMAN.png" width=60% ></h1>
+  <img src="./imagenes/Diagrama_N.png" width=60% ></h1>
 </div> 
 
 ---
@@ -80,7 +80,7 @@ Según Arteaga(2023) define el algoritmo como una secuencia de pasos lógicos, o
 **4. Tabla de decisión:** Es una herramienta que ayuda a ordenar condiciones y posibles acciones en una tabla, para ver con claridad qué debe hacerse en cada caso.
 
 <div>
-  <img src="./imagenes/TBL_DECISION.png" width=60% "></h1>
+  <img src="./imagenes/TablaDeDecision.png" width=60% "></h1>
 </div>
 
 ---
@@ -88,22 +88,26 @@ Según Arteaga(2023) define el algoritmo como una secuencia de pasos lógicos, o
 **5. IPO (Entrada–Proceso–Salida):** Es un esquema simple que permite entender un algoritmo identificando qué datos ingresan, qué se hace con ellos y qué resultado se obtiene.
 
 <div>
-  <img src="./imagenes/MODELO IPO.png" width=60% alt="header"></h1>
+  <img src="./imagenes/Modelo_IPO.png" width=60% alt="header"></h1>
 </div>
 
 ---
 
 ## Programas y Lenguajes de programación
 1. Programa: Conjunto de instrucciones finitos que traduce la computadora para resolver problemas.
-2. Lenguajes de programación: 
+2. Lenguajes de programación: Es un sistema de reglas y palabras clave que usamos para darle instrucciones a una computadora y hacer que ejecute tareas, resuelva problemas o construya programas.
+
+<div>
+  <img src="./imagenes/LenguajesDeProgramacion.png" width=60% alt="header"></h1>
+</div>
 
 ---
 
 ## Etapas para la solución de problemas
 
+<div>
+  <img src="./imagenes/Etapas.png" width=60% alt="header"></h1>
+</div>
 
 ---
-
-## Dato
-Es la representación de un objeto que es interpretado por el computador.
 
