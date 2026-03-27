@@ -47,4 +47,11 @@ Según Arteaga(2023) define el algoritmo como una secuencia de pasos lógicos, o
 - Aprendizaje no supervisado: Parten del conjunto de datos sin etiquetar, no es capaz de predecir etiquetas. 
 - Aprendizaje por refuerzo: Su objetivo es crear el “agente” que aprende a partir de interacciones con el entorno.
 
----
+## Heramientas Algorítmicas
+
+
+## Programas y Lenguajes de programación
+1. Programa: Conjunto de instrucciones finitos que traduce la computadora para resolver problemas.
+2. Lenguajes de programación: 
+
+
