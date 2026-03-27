@@ -1,0 +1,287 @@
+:root {
+  --bg: #f3f5f9;
+  --card: #ffffff;
+  --text: #1f2a37;
+  --muted: #6b7280;
+  --border: #d8dee9;
+  --primary: #6d28d9;
+  --primary-2: #2563eb;
+  --success: #16a34a;
+  --success-bg: #ecfdf3;
+  --danger: #dc2626;
+  --danger-bg: #fef2f2;
+  --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  --radius: 18px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.container {
+  width: min(1100px, calc(100% - 32px));
+  margin: 32px auto 60px;
+}
+
+.hero {
+  margin-bottom: 24px;
+}
+
+.hero h1 {
+  margin: 0 0 8px;
+  font-size: clamp(28px, 4vw, 40px);
+}
+
+.hero p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.section {
+  margin-top: 34px;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.section-title .icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  color: white;
+  font-size: 22px;
+  font-weight: bold;
+  box-shadow: var(--shadow);
+}
+
+.section-title .icon.blue {
+  background: var(--primary-2);
+}
+
+.section-title .icon.purple {
+  background: var(--primary);
+}
+
+.section-title h2 {
+  margin: 0;
+  font-size: clamp(24px, 3vw, 34px);
+}
+
+.section-help {
+  text-align: center;
+  color: #607190;
+  font-style: italic;
+  margin: 8px 0 18px;
+}
+
+.exercise-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 22px;
+  box-shadow: var(--shadow);
+  margin-bottom: 16px;
+}
+
+.exercise-row {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.exercise-left {
+  flex: 1 1 420px;
+  min-width: 280px;
+}
+
+.exercise-number {
+  color: #8090a8;
+  font-weight: 700;
+  margin-right: 10px;
+}
+
+.exercise-text {
+  font-size: 18px;
+  line-height: 1.6;
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.exercise-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.answer-input {
+  width: 86px;
+  min-height: 40px;
+  padding: 10px 12px;
+  text-align: center;
+  border: 2px solid #c8d0dc;
+  border-radius: 10px;
+  font-size: 22px;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  background: white;
+}
+
+.answer-input:focus {
+  border-color: var(--primary-2);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+}
+
+.answer-input.success {
+  border-color: #4ade80;
+  color: #166534;
+  background: #f0fdf4;
+}
+
+.answer-input.error {
+  border-color: #f87171;
+  color: #991b1b;
+  background: #fff1f2;
+}
+
+button {
+  border: none;
+  cursor: pointer;
+  min-height: 40px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  color: white;
+  font-size: 16px;
+  font-weight: 700;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+}
+
+.btn-blue {
+  background: var(--primary-2);
+}
+
+.btn-purple {
+  background: var(--primary);
+}
+
+.status-inline {
+  font-weight: 700;
+  min-width: 140px;
+}
+
+.status-inline.success {
+  color: var(--success);
+}
+
+.status-inline.error {
+  color: var(--danger);
+}
+
+.feedback {
+  margin-top: 16px;
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: none;
+  line-height: 1.6;
+  border: 1px solid transparent;
+}
+
+.feedback.show {
+  display: block;
+}
+
+.feedback.success {
+  background: var(--success-bg);
+  border-color: #bbf7d0;
+  color: #166534;
+}
+
+.feedback.error {
+  background: var(--danger-bg);
+  border-color: #fecaca;
+  color: #991b1b;
+}
+
+.feedback strong {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 18px;
+}
+
+.feedback hr {
+  border: none;
+  border-top: 1px solid rgba(148, 163, 184, 0.35);
+  margin: 10px 0 12px;
+}
+
+.summary {
+  margin-top: 28px;
+  background: linear-gradient(135deg, #ffffff 0%, #eef2ff 100%);
+  border: 1px solid #dbe4ff;
+  border-radius: 22px;
+  padding: 22px;
+  box-shadow: var(--shadow);
+}
+
+.summary h3 {
+  margin: 0 0 10px;
+  font-size: 24px;
+}
+
+.summary p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.summary strong {
+  color: var(--text);
+}
+
+.toolbar {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+.btn-light {
+  background: white;
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+@media (max-width: 720px) {
+  .exercise-actions {
+    width: 100%;
+  }
+
+  .answer-input {
+    width: 100px;
+  }
+
+  .status-inline {
+    min-width: auto;
+  }
+}
