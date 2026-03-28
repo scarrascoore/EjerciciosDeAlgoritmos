@@ -1,0 +1,9 @@
+Proceso TripleDeUnNumero
+	numero = Entero;
+	triple=Entero;
+	
+	numero = 11;
+	triple = numero * 3
+	
+	Escribir "El resultado es: ", triple;
+FinProceso
