@@ -1,0 +1,16 @@
+// Visualice el área de un circulo y longitud de su circunferencia, 
+// para esto se deberá digitar el radio del circulo
+
+Proceso Ejercicio03
+	Imprimir "**************** Ejercicio 03 ****************"
+	Imprimir "-- Visualizar el área de un circulo y la"
+	Imprimir "   longitud de la circunferencia --"
+	Imprimir "> Ingrese el radio del circulo: "
+	Definir radioDelCirculo Como Real
+	Leer radioDelCirculo
+	Definir areaDelCirculo Como Real
+	longitudDelCirculo = 2 * 3.1415 * radioDelCirculo
+	areaDelCirculo = 3.1415 * (radioDelCirculo ^ 2)
+	Escribir "El área del Circulo es : " areaDelCirculo
+	Escribir "La longitud del circulo es : " longitudDelCirculo
+FinProceso
