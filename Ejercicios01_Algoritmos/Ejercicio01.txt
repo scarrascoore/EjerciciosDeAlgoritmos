@@ -1,0 +1,11 @@
+// Mostrar el triple de un número
+
+Proceso Ejercicio01
+	Imprimir "**************** Ejercicio 01 ****************"
+	Imprimir "-- Mostrar el triple de un número --"
+	Definir unicoNumero Como Entero;
+	unicoNumero = 11
+	tripleDelNumero = unicoNumero * 3
+	Escribir "El número es: 11"
+	Escribir "El resultado es: ", tripleDelNumero
+FinProceso

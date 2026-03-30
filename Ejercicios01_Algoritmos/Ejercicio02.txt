@@ -1,0 +1,15 @@
+//Ingrese por teclado dos números y muestre su semidiferencia
+
+Proceso Ejercicio02
+	Imprimir "**************** Ejercicio 02 ****************"
+	Imprimir "-- Mostrar La semidiferencia de dos números --"
+	Imprimir "> Ingrese el primer número: "
+	Definir numeroUno Como Real
+	Leer numeroUno
+	Imprimir "> Ingrese el segundo número: "
+	Definir numeroDos Como Real
+	Leer numeroDos
+	Definir semiDiferencia Como Real
+	semiDiferencia = (numeroUno - numeroDos)/2
+	Escribir "La semiDiferencia de dos números es : " semiDiferencia
+FinProceso
