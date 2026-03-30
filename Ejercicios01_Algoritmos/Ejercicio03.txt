@@ -1,30 +1,16 @@
-// Una persona debe invertir un capital en un banco para ganar intereses para esto construya un Algoritmo
-// que haga una proyección de los intereses a ganar. Se deberá digitar el nombre de la persona, el capital
-// de inversión y el número de meses que dejará el dinero en el banco. 
-// Visualice el interés a obtener y el total de dinero que obtendrá al cabo del tiempo establecido.
-// Consideraciones: el interés es simple y el banco le paga 2% mensual.
+// Visualice el área de un circulo y longitud de su circunferencia, 
+// para esto se deberá digitar el radio del circulo
 
-Proceso Ejercicio04
-	Imprimir "**************** Ejercicio 04 ****************"
-	Imprimir " Proyección de intereses del BANCO CHIPLEY "
-	Imprimir "------------- INGRESO DE DATOS -------------"
-	Imprimir ">>> Ingrese el nombre del cliente: "
-	leer nombreDeCliente
-	Imprimir "----- Bienvenido(a) Estimado(a): " nombreDeCliente " -----"
-	Definir caitalDeInversion Como Real
-	Imprimir ">>> Ingrese la capital de inversión: "
-	Leer capitalDeInversion
-	Definir numeroDeMeses Como Entero
-	Escribir "Ingrese el número de meses:"
-	Leer numeroDeMeses
-	Definir interesMensual, montoTotalMasInteres Como Real
-	interesMensual  = capitalDeInversion * 0.02
-	montoTotalMasInteres = interesMensual + capitalDeInversion
-	Escribir "*************************************"
-	Escribir "Cliente : " nombreDeCliente
-	Escribir "Capital de inversión : " capitalDeInversion
-	Escribir "Meses : " numeroDeMeses
-	Escribir "*************************************"
-	Escribir "Total de intereses : " interesMensual
-	Escribir "Total a entregar : " montoTotalMasInteres
+Proceso Ejercicio03
+	Imprimir "**************** Ejercicio 03 ****************"
+	Imprimir "-- Visualizar el área de un circulo y la"
+	Imprimir "   longitud de la circunferencia --"
+	Imprimir "> Ingrese el radio del circulo: "
+	Definir radioDelCirculo Como Real
+	Leer radioDelCirculo
+	Definir areaDelCirculo Como Real
+	longitudDelCirculo = 2 * 3.1415 * radioDelCirculo
+	areaDelCirculo = 3.1415 * (radioDelCirculo ^ 2)
+	Escribir "El área del Circulo es : " areaDelCirculo
+	Escribir "La longitud del circulo es : " longitudDelCirculo
 FinProceso
