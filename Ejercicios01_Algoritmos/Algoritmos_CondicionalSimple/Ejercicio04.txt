@@ -1,0 +1,24 @@
+// Digite un cierto año y visualice si es bisiesto o no.
+// Este ejercicio lo veremos en dos oportunidades para ver 
+// como se adapta a bucles
+
+Proceso Ejercicio04
+	
+	Definir anio, anioBisiesto Como Entero
+	Imprimir "**************** Ejercicio 04 ****************"
+	Imprimir " HALLAR AÑO BISIESTO "
+	Escribir "Ingresa año :"
+	Leer anio
+	Si anio > 1599 Entonces
+		Si (anio MOD 4) = 0 Y (anio MOD 100) <> 0 O (anio MOD 400) = 0 Entonces
+			Escribir anio " es un año bisiesto"
+		FinSi
+		Si (anio MOD 4) <> 0 Y (anio MOD 100) = 0 O (anio MOD 400) <> 0 Entonces
+			Escribir anio " no es bisiesto"
+		FinSi
+	FinSi
+	Si anio < 1599 Entonces
+		Escribir "Debe ingresar un numero mayor a 1599." 
+		Escribir "Debido a que el calendario Gregoriano se introdujo despues de 1582"
+	FinSi
+FinProceso
