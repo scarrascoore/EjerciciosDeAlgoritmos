@@ -1,0 +1,2 @@
+// Digite el nombre, año de ingreso y sexo de un trabajador, muestre el nombre y
+// el tiempo de servicio de aquel trabajador que tenga mas de 25 años laborando
