@@ -1,2 +1,36 @@
 // Digite el nombre, año de ingreso y sexo de un trabajador, muestre el nombre y
-// el tiempo de servicio de aquel trabajador que tenga mas de 25 años laborando
+// el tiempo de servicio de aquel trabajador que tenga mas de 25 años laborando.
+// Además, segun lo que ingrese de sexo M o F que indique empleado o empleada.
+
+Proceso Ejercicio02
+	
+	Definir anioDeIngreso, aniosLaborando Como Entero
+	Definir sexo Como caracter
+	Definir nombreTrabajador, anio, anioCadena Como cadena
+	
+	Imprimir "**************** Ejercicio 02 ****************"
+	Imprimir "      PLANILLA DE PAGO DE TRABAJADORES      "
+	Imprimir "------------- INGRESO DE DATOS -------------"
+	Escribir "Ingrese nombre : "
+	Leer nombreTrabajador
+	Escribir "Año de ingreso : "
+	Leer anioDeIngreso
+	Escribir "Sexo (M)(F): "
+	Leer sexo
+	anio = convertiratexto(FechaActual())
+	anioCadena = Subcadena(anio,1,4)		
+	aniosLaborando = ConvertirANumero(anioCadena) - añoDeIngreso
+	
+	//En otro ejemplo de Condicional doble volveremos a explicar el mismo ejercicio
+	si aniosLaborando > 25 Entonces
+		Escribir "*******************************"
+			si sexo = "M" Entonces
+				Escribir "Empleado : " nombreTrabajador
+			FinSi
+			Si sexo = "F" Entonces
+				Escribir "Empleada : " nombreTrabajador
+			FinSi
+		Escribir "Años laborando : " aniosLaborando	
+	FinSi
+	
+FinProceso

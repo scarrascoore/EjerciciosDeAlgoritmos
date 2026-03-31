@@ -1,45 +1,22 @@
-// Ingrese por teclado el nombre, el numero de horas trabajadas durante la semana, y la tarifa por hora 
-// esta informacion es de un obrero cuya jornada laboral es de 48 horas semanales. La política de pagos
-// de la empresa consiste en que el valor de la hora extra tiene un incremento del 40%. Se deberá visualizar 
-// solo del trabajador que hizo horas extras, el valor de la hora extra y el valor del importe total.
+// Digite dos números, solo si el primer número es mayor que el segundo, muestre
+// el producto de ambos numeros ingresados
 
 Proceso Ejercicio01
-	Definir horasTrabajadas Como Entero
-	Definir tarifaPorHoras Como Real
-	Definir nombreTrabajador Como cadena
+	
+	Definir numeroUno, numeroDos, producto Como Real
+	
 	Imprimir "**************** Ejercicio 01 ****************"
-	Imprimir " PLANILLA DE PAGO DE TRABAJADORES "
+	Imprimir "          PRODUCTO DE DOS NÚMEROS      "
 	Imprimir "------------- INGRESO DE DATOS -------------"
-	Escribir "Ingrese nombre : " nombreTrabajador
-	Leer nombreTrabajador
-	Escribir "Ingrese horas trabajadas : "
-	Leer horasTrabajadas
-	Escribir "Ingrese la tarifa por horas trabajadas : "
-	Leer tarifaPorHoras
+	Escribir "Ingrese el primer número : "
+	Leer numeroUno
+	Escribir "Ingrese el segundo número : "
+	Leer numeroDos
 	
-	Definir horasExtras, importeTotal,valorPorHorasExtras Como Real 
-	
-	Si horastrabajadas > 48 Entonces
-		horasExtras = horastrabajadas - 48
-		valorPorHorasExtras = (horasExtras * tarifaPorHoras) * 0.4
-		importeTotal = valorPorHorasExtras + ((horastrabajadas - horasExtras) * tarifaPorHoras)
-		Escribir "*************************************"
-		Escribir "Empleado : " nombreTrabajador
-		Escribir "Horas Trabajadas Semanales : " horastrabajadas " Hrs"
-		Escribir "Horas Extras : " horasExtras " Hr"
-		Escribir "Importe por horas trabajadas : S/ " tarifaPorHoras
-		Escribir "Tarifa Total H.E. : S/ " valorPorHorasExtras
-		Escribir "*************************************"
-		Escribir "Total a pagar : 	S/ 	" importeTotal		
+	Si numeroUno > numeroDos Entonces
+		producto = numeroUno * numeroDos
+		Escribir "************************"
+		Escribir "El producto es : " producto
 	FinSi
 	
-	Si horastrabajadas <= 48 Entonces		
-		Escribir "*************************************"
-		Escribir "Empleado : " nombreTrabajador
-		Escribir "Horas Trabajadas Semanales : " horastrabajadas " Hrs"
-		Escribir "Importe por horas trabajadas : S/ " tarifaPorHoras
-		Escribir "*************************************"
-		Escribir "Total a pagar : 	S/ 	" horastrabajadas  * tarifaPorHoras
-	FinSi
-		
 FinProceso
