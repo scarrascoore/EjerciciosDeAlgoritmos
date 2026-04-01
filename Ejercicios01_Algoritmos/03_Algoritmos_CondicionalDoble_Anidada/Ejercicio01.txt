@@ -1,7 +1,7 @@
 // Desarrolle un algoritmo que permita hallar el área de las siguientes figuras geométricas:
 // Cuadrado, rectángulo, rombo, trapecio, triángulo, hexágono, círculo.
 
-Proceso Ejercicio05
+Proceso Ejercicio01
 	Definir areaCuadrado,areaRombo,areaTrapecio,areaCirculo,areaTriangulo,areaRectangulo,areaHexagono Como Real
 	Definir lado,altura,base,diagonalMayor,diagonalMenor,baseMayor,baseMenor,radio,perimetro,apotema Como Real
 	Definir seleccionarNumero Como Caracter

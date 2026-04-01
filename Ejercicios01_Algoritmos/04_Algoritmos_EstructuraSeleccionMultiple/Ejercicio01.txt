@@ -1,0 +1,28 @@
+// Digite el numero del mes y visualice el nombre que le corresponde:
+
+Proceso Ejercicio01
+	Definir numeroMes Como Entero
+	Escribir "**********************************"
+	Escribir " USANDO SELECCIONES MULTIPLES"
+	Escribir "**********************************"
+	Escribir "Ingresar número de mes:"
+	Leer numeroMes
+	
+	Segun numeroMes Hacer
+		1: Escribir "El número " numeroMes " le pertenece al mes de Enero"
+		2: Escribir "El número " numeroMes " le pertenece al mes de Febrero"
+		3: Escribir "El número " numeroMes " le pertenece al mes de Marzo"
+		4: Escribir "El número " numeroMes " le pertenece al mes de Abril"
+		5: Escribir "El número " numeroMes " le pertenece al mes de Mayo"
+		6: Escribir "El número " numeroMes " le pertenece al mes de Junio"
+		7: Escribir "El número " numeroMes " le pertenece al mes de Julio"
+		8: Escribir "El número " numeroMes " le pertenece al mes de Agosto"
+		9: Escribir "El número " numeroMes " le pertenece al mes de Setiembre"
+		10: Escribir "El número " numeroMes " le pertenece al mes de Octubre"
+		11: Escribir "El número " numeroMes " le pertenece al mes de Noviembre"
+		12: Escribir "El número " numeroMes " le pertenece al mes de Diciembre"	
+		Otro:
+			Escribir "Opcion invalida"
+	FinSegun
+	
+FinProceso
