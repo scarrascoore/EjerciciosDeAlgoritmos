@@ -1,0 +1,66 @@
+// Crea un programa para resolver problemas de Movimiento Rectilíneo Uniformemente Variado (MRUV). 
+// El menú debe permitir al usuario elegir qué variable desea calcular basándose en los datos que posee:
+// Caso 1: Calcular Velocidad Final (Vf) dados Vo, a, t.
+// Caso 2: Calcular Distancia (d) dados V0, t, a.
+// Caso 3: Calcular Tiempo (t) usando la fórmula cuadrática dados d, Vo, a
+
+Proceso Ejercicio01
+	Definir seleccionarNumero Como Entero
+	Definir velocidadInicial,velocidadFinal,aceleración,tiempo,distancia Como Real
+	Escribir "*********************************************"
+	Escribir " MOVIMIENTO RECTILINEO UNIFORMEMENTE VARIADO"
+	Escribir "*********************************************"
+	Escribir "Selecciona una opción : "
+	Escribir "[1] Calcular la velocidad Final"
+	Escribir "[2] Calcular la distancia"
+	Escribir "[3] Calcular el tiempo"
+	Leer seleccionarNumero
+	
+	Segun seleccionarNumero Hacer
+		1: 
+			Escribir "--------------------------------------"
+			Escribir "Calcular la velocidad final(Vf) "
+			Escribir "--------------------------------------"
+			Escribir "Ingrese la Velocidad Inicial(Vo) : "
+			Leer velocidadInicial
+			Escribir "Ingrese la aceleración(a) : "
+			Leer aceleracion
+			Escribir "Ingrese el tiempo(t) : "
+			Leer tiempo			
+			velocidadFinal = redon(velocidadInicial + aceleracion * tiempo)/100
+			Escribir "*********************************************"
+			Escribir "La velocidad final es " velocidadFinal " m/s"
+			Escribir "---------------------------------------------"
+		2: 
+			Escribir "--------------------------------------"
+			Escribir "Calcular la distancia(d) "
+			Escribir "--------------------------------------"
+			Escribir "Ingrese la Velocidad Inicial(Vo) : "
+			Leer velocidadInicial
+			Escribir "Ingrese la aceleración(a) : "
+			Leer aceleracion
+			Escribir "Ingrese el tiempo(t) : "
+			Leer tiempo			
+			distancia = redon(velocidadInicial * tiempo + (0.5 * aceleracion * (tiempo ^ 2)))/100
+			Escribir "*********************************************"
+			Escribir "La distandia (d) es " distancia " metros"
+			Escribir "---------------------------------------------"
+		3: 
+			Escribir "--------------------------------------"
+			Escribir "Calcular el tiempo(t) "
+			Escribir "--------------------------------------"
+			Escribir "Ingrese la distancia  : "
+			Leer distancia
+			Escribir "Ingrese la Velocidad Inicial(Vo) : "
+			Leer velocidadInicial
+			Escribir "Ingrese la aceleración(a) : "
+			Leer aceleracion			
+			tiempo = redon((-(velocidadInicial) + (raiz((velocidadInicial ^2)-4*(0.5 * aceleracion)*(-distancia))))/(2*(0.5*aceleracion)))/100
+			Escribir "*********************************************"
+			Escribir "El tiempo (t) es " tiempo " segundos"
+			Escribir "---------------------------------------------"
+		Otro:
+			Escribir "Opcion invalida"
+	FinSegun
+	
+FinProceso
