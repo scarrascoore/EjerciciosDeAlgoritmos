@@ -1,0 +1,108 @@
+// Desarrolle un algoritmo que permita hallar el área de las siguientes figuras geométricas:
+// Cuadrado, rectángulo, rombo, trapecio, triángulo, hexágono, círculo.
+
+Proceso Ejercicio05
+	Definir areaCuadrado,areaRombo,areaTrapecio,areaCirculo,areaTriangulo,areaRectangulo,areaHexagono Como Real
+	Definir lado,altura,base,diagonalMayor,diagonalMenor,baseMayor,baseMenor,radio,perimetro,apotema Como Real
+	Definir seleccionarNumero Como Caracter
+	
+	Escribir "**********************************"
+	Escribir "    Área de Figuras Geométricas"
+	Escribir "**********************************"
+	Escribir "Seleccione una figura geométrica: "
+	Escribir "[1] Área del Cuadrado "
+	Escribir "[2] Área del Rectángulo "
+	Escribir "[3] Área del Rombo "
+	Escribir "[4] Área del Trapecio "
+	Escribir "[5] Área del Triángulo "
+	Escribir "[6] Área del Hexágono "
+	Escribir "[7] Área del Círculo"
+	Escribir "---------------------------------"
+	Leer seleccionarNumero
+	
+	si seleccionarNumero == "1" Entonces
+		Escribir "**********************************"
+		Escribir " Calculando el área del Cuadrado"
+		Escribir "**********************************"
+			Escribir "Ingrese el valor del Lado : "
+			Leer lado
+			areaCuadrado = lado ^ 2
+			Escribir "El área del Cuadrado es " areaCuadrado
+			SiNo
+				si seleccionarNumero == "2" Entonces
+					Escribir "**********************************"
+					Escribir " Calculando el área del Rectángulo"
+					Escribir "**********************************"
+					Escribir "Ingrese el valor de la base : "
+					Leer base
+					Escribir "Ingrese el valor de la altura"
+					Leer altura
+					areaRectangulo = base * altura
+					Escribir "El área del Rectángulo es " areaRectangulo
+				SiNo
+					si seleccionarNumero == "3" Entonces
+						Escribir "**********************************"
+						Escribir " Calculando el área del Rombo"
+						Escribir "**********************************"
+						Escribir "Ingrese el valor de la Diagonal Mayor : "
+						Leer diagonalMayor
+						Escribir "Ingrese el valor de la Diagonal Menor : "
+						Leer diagonalMenor
+						areaRombo = (diagonalMayor * diagonalMenor)/2
+						Escribir "El área del Rombo es " areaRombo
+					SiNo
+						Si seleccionarNumero == "4" Entonces
+							Escribir "**********************************"
+							Escribir " Calculando el área del Trapecio"
+							Escribir "**********************************"
+							Escribir "Ingrese el valor de la Base Mayor : "
+							Leer baseMayor
+							Escribir "Ingrese el valor de la Base Menor : "
+							Leer baseMenor
+							Escribir "Ingrese el valor de la altura : "
+							Leer altura
+							areaTrapecio = ((baseMayor + baseMenor)* altura)/2
+							Escribir "El área del Trapecio es " areaTrapecio
+						SiNo
+							Si seleccionarNumero == "5" Entonces
+								Escribir "**********************************"
+								Escribir " Calculando el área del Triángulo"
+								Escribir "**********************************"
+								Escribir "Ingrese el valor de base : "
+								Leer base
+								Escribir "Ingrese el valor de la altura : "
+								Leer altura
+								areaTriangulo = (base * altura)/2
+								Escribir "El área del Triángulo es " areaTriangulo
+							SiNo
+								Si seleccionarNumero == "6" Entonces
+									Escribir "**********************************"
+									Escribir " Calculando el área del Hexágono"
+									Escribir "**********************************"
+									Escribir "Ingrese el valor del Perímetro : "
+									Leer perimetro
+									Escribir "Ingrese el valor de la apotema : "
+									Leer apotema
+									areaHexagono = (perimetro * apotema)/2
+									Escribir "El área del Hexágono es " areaHexagono
+								SiNo
+									Si seleccionarNumero == "7" Entonces
+										Escribir "**********************************"
+										Escribir " Calculando el área del Círculo"
+										Escribir "**********************************"
+										Escribir "Ingrese el valor de radio : "
+										Leer radio
+										areaCirculo = PI * (radio ^ 2)
+										Escribir "El área del Círculo es " areaCirculo
+									SiNo
+										Escribir "Debe ingresar un número del [1] al [7]"
+										Escribir "Vuelva a ejecutar el programa..."
+								FinSi
+							FinSi					
+						FinSi
+					FinSi
+				FinSi
+			FinSi
+		FinSi
+	
+FinProceso
