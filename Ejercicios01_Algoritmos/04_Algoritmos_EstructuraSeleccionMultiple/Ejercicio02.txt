@@ -4,7 +4,7 @@
 // Caso 2: Calcular Distancia (d) dados V0, t, a.
 // Caso 3: Calcular Tiempo (t) usando la fórmula cuadrática dados d, Vo, a
 
-Proceso Ejercicio01
+Proceso Ejercicio02
 	Definir seleccionarNumero Como Entero
 	Definir velocidadInicial,velocidadFinal,aceleración,tiempo,distancia Como Real
 	Escribir "*********************************************"
