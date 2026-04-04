@@ -1,0 +1,17 @@
+// Ingresa por teclado un número y calcula los primeros 10 multiplos de dicho número
+
+Proceso Ejercicio01
+	
+	Definir numeroIngresado, multiploNumero Como Entero
+	Escribir "*********************************************"
+	Escribir "          EJERCICIO 01: Multiplos"
+	Escribir "*********************************************"
+	Escribir "Ingresar el número para calcular : "
+	Leer numeroIngresado
+	
+	Para i = 1 Hasta 10 Hacer
+		multiploNumero = numeroIngresado * i
+		Escribir "El " multiploNumero " es multiplo de " numeroIngresado
+	FinPara
+	
+FinProceso
