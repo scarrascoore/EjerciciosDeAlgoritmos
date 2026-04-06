@@ -1,0 +1,20 @@
+// Genera y visualiza la tabla de multiplicar pero en el multiplicador
+// deben de ser números del 1 al 12.
+
+Proceso Ejercicio03
+	
+	Definir multiplicador, multiplicando, producto Como Entero
+	Escribir "********************************************"
+	Escribir "    EJERCICIO 03: TABLAS DE MULTIPLICAR"
+	Escribir "********************************************"
+	Escribir "---- Tablas con 12 multiplicadores ----"
+	Escribir "Ingresar el factor multiplicando: "
+	Leer multiplicando
+		
+	Para i = 1 Hasta 12 Hacer
+		multiplicador = i
+		producto = multiplicando * multiplicador
+		Escribir multiplicando " x " multiplicador " = " producto
+	FinPara
+		
+FinProceso
