@@ -1,0 +1,41 @@
+// Diseñe un algoritmo que ingrese el nombre del alumno(a) y sus tres notas
+// de práctica calificada. Muestre el nombre y el promedio de las prácticas.
+
+Proceso Ejercicio04
+	Definir nombreAlumno, nombreCurso como cadena
+	Definir acumuladorNotaPractica, notaPractica, promedio Como Real
+	Definir contadorNotas Como Entero
+	Escribir "********************************************"
+	Escribir "      EJERCICIO 04: PROMEDIO DE NOTAS"
+	Escribir "********************************************"
+	Escribir " ---- INGRESO DE NOTAS ----"
+	Escribir "Ingresar nombre de alumno(a): "
+	Leer nombreAlumno
+	Escribir "Ingresar nombre de Curso: "
+	Leer nombreCurso
+	contadorNotas = 1
+	acumuladorNotaPractica = 0
+	
+	Mientras contadorNotas <= 3 Hacer
+		Escribir "Ingresar nota de PC_" contadorNotas ": "
+		Leer notaPractica
+		
+		Si notaPractica <= 20 Entonces
+			acumuladorNotaPractica = acumuladorNotaPractica + notaPractica
+			contadorNotas = contadorNotas + 1
+		SiNo
+			Escribir "¡Error...! La nota máxima a calificar es 20."
+		FinSi
+		
+	FinMientras
+	
+	promedio = redon((acumuladorNotaPractica/3)*10)/10
+	
+	Escribir "-----------------------------------------"
+	Escribir "--- Promedio de Prácticas Calificadas ---"
+	Escribir "-----------------------------------------"
+	Escribir "[1] Alumno(a)......... " nombreAlumno
+	Escribir "[2] Curso............. " nombreCurso
+	Escribir "[3] Promedio.......... " promedio
+	
+FinProceso
