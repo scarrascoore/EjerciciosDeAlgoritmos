@@ -1,0 +1,54 @@
+// En una competencia de atletismo escolar se presentaron 35 deportistas, 
+// el comité seleccionador recomendó que para facilitar su labor, se elabore
+// un algoritmo para ingresar el nombre y la talla de cada deportista. Además
+// se debe visualizar lo siguiente:
+// - La cantidad de deportistas que miden 1.79 metros
+// - La cantidad de deportistas que miden 1.71 metros
+// - La cantidad de deportistas que miden 1.68 metros
+// - La cantidad de deportistas que fueron aceptados
+// - La cantidad de deportistas que NO fueron aceptados
+// Ten en cuenta que el comité solo aceptará deportistas que midan entre 1.70 y 1.78
+
+Proceso Ejercicio02
+	
+	Definir nombreDeportista Como cadena
+	Definir talla Como Real
+	Definir contadorUno,contadorDos,contadorTres Como Entero
+	Definir deportistasAceptados,deportistasRechazados Como Entero
+	Escribir "*********************************************"
+	Escribir "          EJERCICIO 02: ATLETAS"
+	Escribir "*********************************************"
+	
+	Para i = 1 Hasta 35 Hacer
+		Escribir "Ingresar el nombre : "
+		Leer nombreDeportista
+		Escribir "Ingresar la talla : "
+		Leer talla
+			
+		Si talla >= 1.71 Y talla <= 1.78 Entonces
+			si talla = 1.71 Entonces
+				contadorDos = contadorDos + 1
+			FinSi
+			deportistasAceptados = deportistasAceptados + 1
+		SiNo
+			Si talla <= 1.69 Entonces
+				Si talla = 1.68 Entonces
+					contadorTres = contadorTres + 1
+				FinSi
+			FinSi
+			Si talla > 1.78 Entonces
+				Si talla = 1.79 Entonces
+					contadorUno = contadorUno + 1
+				FinSi
+			FinSi
+			deportistasRechazados = deportistasRechazados + 1
+		FinSi
+	FinPara
+	
+	Escribir contadorUno " deportistas miden 1.79 metros"
+	Escribir contadorDos " deportistas miden 1.71 metros"
+	Escribir contadorTres " deportistas miden 1.68 metros"
+	Escribir deportistasAceptados " deportistas fueron aceptados"
+	Escribir deportistasRechazados " deportistas NO fueron aceptados"
+	
+FinProceso
