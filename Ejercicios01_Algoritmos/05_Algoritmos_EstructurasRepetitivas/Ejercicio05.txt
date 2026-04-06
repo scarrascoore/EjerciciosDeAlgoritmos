@@ -7,7 +7,7 @@ Proceso Ejercicio05
 	Definir seleccionarOpcion Como Entero
 	Definir numeroUno,numeroDos,resultado Como Real
 	Escribir "*******************************"
-	Escribir "      EJERCICIO 06: RETO"
+	Escribir "      EJERCICIO 05: RETO"
 	Escribir "*******************************"
 	
 	seleccionarOpcion = 0

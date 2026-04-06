@@ -1,0 +1,17 @@
+// Elaborar un procedimiento para imprimir el mayor valor de dos
+// números enteros.
+
+SubProceso imprimeMayor(numeroUno,numeroDos)
+	Si numeroUno > numeroDos Entonces
+		Escribir(numeroUno)
+	SiNo
+		Escribir(numeroDos)
+	FinSi
+FinSubProceso
+
+Proceso Ejercicio01
+	Escribir "Ingrese número: "
+	Leer numeroUno,NumeroDos
+	Escribir "El número mayor es: "
+	imprimeMayor(numeroUno,numeroDos)
+FinProceso
