@@ -1,0 +1,28 @@
+// Construya un algoritmo en el que se digite el nombre y el sueldo de un trabajador, se debe 
+// imprimir el descuento, la bonificación y el sueldo neto que recibe el trabajdor, para esto 
+// considere que todos los trabajadores tienen un descuento del 11.30% del sueldo para AFP y 
+// que la bonificacion otorgada por la empresa sea del 15% del sueldo.
+SubProceso imprimirTitulo(nombreDelEmpleado,sueldoEmpleado,descuentoAfp,bonificacion,sueldoNeto)
+	Imprimir ">>> Ingrese el sueldo : "
+	Leer sueldoEmpleado
+	descuentoAfp = sueldoEmpleado * 0.1130
+	bonificacion = sueldoEmpleado * 0.15
+	sueldoNeto  = (sueldoEmpleado - descuentoAfp) + bonificacion
+	Escribir "*************************************"
+	Escribir "Empleado : " nombreDelEmpleado
+	Escribir "Sueldo bruto :        S/" sueldoEmpleado
+	Escribir "Descuentos (AFP) :     S/" descuentoAfp
+	Escribir  "Bonificación (15%) :   S/" bonificacion
+	Escribir "*************************************"
+	Escribir "Sueldo Neto a pagar : S/" sueldoNeto
+FinSubProceso
+
+Proceso Ejercicio05
+	Imprimir "**************** Ejercicio 05 ****************"
+	Imprimir " PLANILLA DE PAGO DE TRABAJADORES "
+	Imprimir "------------- INGRESO DE DATOS -------------"
+	Imprimir ">>> Ingrese su nombre : "
+	leer nombreDelEmpleado
+	Imprimir "----- Bienvenido(a) Estimado(a): " nombreDelEmpleado " -----"
+	imprimirTitulo(nombreDelEmpleado,sueldoEmpleado,descuentoAfp,bonificacion,sueldoNeto)
+FinProceso
