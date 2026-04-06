@@ -1,0 +1,49 @@
+// Diseñar un algoritmo que muestre un menú de operaciones.
+// El usuario podrá sumar, restar, multiplicar, dividir o salir.
+// Si elige una opción válida, ingresará dos números y se mostrará el resultado.
+// El programa se repetirá hasta que seleccione la opción 5.
+
+Proceso Ejercicio05
+	Definir seleccionarOpcion Como Entero
+	Definir numeroUno,numeroDos,resultado Como Real
+	Escribir "*******************************"
+	Escribir "      EJERCICIO 06: RETO"
+	Escribir "*******************************"
+	
+	seleccionarOpcion = 0
+	
+	Mientras seleccionarOpcion <> 5 Hacer
+		Escribir "Seleccionar una opción : "
+		Escribir "[1] Sumar"
+		Escribir "[2] Restar"
+		Escribir "[3] Multiplicar"
+		Escribir "[4] Dividir"
+		Escribir "[5] Salir"
+		Leer seleccionarOpcion
+		
+		Si seleccionarOpcion <> 5 Y seleccionarOpcion < 6 Entonces
+			Escribir "Ingresar número Uno: "
+			leer numeroUno
+			Escribir "Ingresar número Dos: "
+			leer numeroDos			
+				
+		Segun seleccionarOpcion Hacer
+			1: resultado = numeroUno + numeroDos 	
+			2: resultado = numeroUno - numeroDos
+			3: resultado = numeroUno * numeroDos
+			4: resultado = numeroUno / numeroDos
+		FinSegun
+		Escribir "*******************************"
+		Escribir " El resultado es: " resultado
+		Escribir "*******************************"
+	SiNo
+		Si seleccionarOpcion = 5 Entonces
+			Escribir "Finalizando Programa...!"
+		SiNo
+			Escribir "*****************************************"
+			Escribir " Error. Debe ingresar un número del Menu"
+			Escribir "*****************************************"
+		FinSi
+	FinSi		
+	FinMientras
+FinProceso
