@@ -22,7 +22,7 @@ Proceso Ejercicio01
 	Si horastrabajadas > 48 Entonces
 		horasExtras = horastrabajadas - 48
 		valorPorHorasExtras = (horasExtras * tarifaPorHoras) * 0.4
-		importeTotal = valorPorHorasExtras + ((horastrabajadas - horasExtras) * tarifaPorHoras)
+		importeTotal = valorPorHorasExtras + (horastrabajadas  * tarifaPorHoras)
 		Escribir "*************************************"
 		Escribir "Empleado : " nombreTrabajador
 		Escribir "Horas Trabajadas Semanales : " horastrabajadas " Hrs"
