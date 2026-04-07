@@ -1,0 +1,32 @@
+// Se desea calcular la potencia eléctrica de circuito. Debemos ingresar los valores de 
+// potencia y Resistencia. Represente el algoritmo para resolver el problema. Considere 
+// que: P = V*I y V = R*I.
+
+SubProceso imprimirFormula(intensidadI,voltajeV,resistenciaR,potenciaP)
+	intensidadI = voltajeV / resistenciaR
+	potenciaP = voltajeV *intensidadI
+	
+	Escribir "Los resultados son: "
+	Escribir "Intensidad de corriente (I) es : " intensidadI " Amperios"
+	Escribir "La potencia eléctrica (P) es : " potenciaP " vatios"
+FinSubProceso
+
+Proceso Ejercicio05
+	
+	Definir potenciaP, voltajeV, resistenciaR, intensidadI Como Real
+	Imprimir "**************** Ejercicio 05 ****************"
+	Imprimir " HALLAR LA POTENCIA ÉLECTRICA "
+	Escribir "Ingresa el voltaje (V) en voltios:"
+	Leer voltajeV
+	Escribir "Ingresa el resistencia (R) en Ohmios:"
+	Leer resistenciaR
+	
+	Si resistenciaR > 0 Entonces
+		imprimirFormula(intensidadI,voltajeV,resistenciaR,potenciaP)
+	FinSi
+	
+	Si resistenciaR < 0 Entonces
+		Escribir "Debe ingresar un numero mayor a 0 para resistencia (R) "
+	FinSi
+	
+FinProceso
