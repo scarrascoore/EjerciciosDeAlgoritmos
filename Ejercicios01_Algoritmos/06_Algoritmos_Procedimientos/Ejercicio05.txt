@@ -1,0 +1,32 @@
+// Evalúe la siguiente función, para esto ingrese por teclado el valor de x, 
+// luego visualice el valor de Z. 
+// X,       si 1 >= X <= 5
+// X+5,     si 6 >= X <= 25
+// 1/X,     si 26 >= X <= 50   
+// 5X -4,   si 51 >= X <= 90
+// X solo to0mará los valores enteros entre 1 y 90, de no ser asi mostrará el mensaje de "Error. Fuera de rango"
+
+SubProceso imprimirValores(valorDeX,opcionCondicional)
+	Si valorDeX >= 1 & valorDeX <= 5 Entonces
+		opcionCondicional = 1
+	SiNo
+		Si valorDeX >= 6 Y valorDeX <= 25 Entonces
+			opcionCondicional = 2
+		SiNo
+			Si valorDeX >= 26 Y valorDeX <= 50 Entonces
+				opcionCondicional = 3
+			SiNo
+				opcionCondicional = 4
+			FinSi
+		FinSi
+	FinSi
+	
+	Segun opcionCondicional Hacer
+		1: Escribir "El valor de Z es " valorDeX
+		2: Escribir "El valor de Z es " valorDeX + 5
+		3: Escribir "El valor de Z es " 1/valorDeX
+		4: Escribir "El valor de Z es " 5 * valorDeX - 4
+		De Otro Modo:
+			Escribir "El valor ingresado está fuera de rango"
+	FinSegun
+FinSubProceso
