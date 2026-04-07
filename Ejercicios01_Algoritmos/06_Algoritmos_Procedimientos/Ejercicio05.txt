@@ -30,3 +30,18 @@ SubProceso imprimirValores(valorDeX,opcionCondicional)
 			Escribir "El valor ingresado está fuera de rango"
 	FinSegun
 FinSubProceso
+
+Proceso Ejercicio03
+	Definir valorDeX, opcionCondicional Como Entero
+    Escribir "*********************************************"
+	Escribir "                EJERCICIO 03 "
+	Escribir "*********************************************"
+	Escribir "Ingrese el valore de X: "
+	Leer valorDeX
+	
+	Si (valorDeX >= 1 & valorDeX <= 90) Entonces
+		
+		imprimirValores(valorDeX,opcionCondicional)
+				
+	FinSi
+FinProceso
