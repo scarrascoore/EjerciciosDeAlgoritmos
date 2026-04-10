@@ -1,0 +1,38 @@
+// Desarrolle un algoritmo en PSeInt que permita calcular el monto a pagar en una tienda escolar.
+// El programa debe leer la cantidad de cuadernos, lapiceros y reglas compradas. Los precios 
+// son S/ 4.50, S/ 1.20 y S/ 2.80 respectivamente.
+// Se debe calcular el subtotal de la compra. Si el subtotal es mayor o igual a S/ 50, se 
+// aplicará un descuento del 10%; en caso contrario, se aplicará un descuento del 3%.
+//Finalmente, el programa debe mostrar el subtotal, el descuento aplicado y el total final a pagar.
+
+Proceso Ejercicio02
+	
+	Definir cuadernos, lapiceros, reglas Como Entero
+	Definir subtotal, descuento, total Como Real
+	
+	Escribir "==== TIENDA ESCOLAR ===="
+	Escribir "Ingrese la cantidad de cuadernos:"
+	Leer cuadernos
+	
+	Escribir "Ingrese la cantidad de lapiceros:"
+	Leer lapiceros
+	
+	Escribir "Ingrese la cantidad de reglas:"
+	Leer reglas
+	
+	subtotal <- (cuadernos * 4.5) + (lapiceros * 1.2) + (reglas * 2.8)
+	
+	Si subtotal >= 50 Entonces
+		descuento <- subtotal * 0.10
+	SiNo
+		descuento <- subtotal * 0.03
+	FinSi
+	
+	total <- subtotal - descuento
+	
+	Escribir "----------------------------"
+	Escribir "Subtotal: S/ ", subtotal
+	Escribir "Descuento: S/ ", descuento
+	Escribir "Total a pagar: S/ ", total
+	Escribir "----------------------------"
+FinProceso
