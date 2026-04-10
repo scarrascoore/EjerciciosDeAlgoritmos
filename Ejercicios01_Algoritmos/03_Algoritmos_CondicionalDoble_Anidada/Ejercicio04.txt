@@ -1,0 +1,85 @@
+// ==========================================================
+// EJERCICIO: ASIGNACION DE BECA UNIVERSITARIA
+// ==========================================================
+// Una universidad desea implementar un sistema en PSeInt
+// para evaluar si un estudiante puede acceder a una beca.
+// El programa debe solicitar los siguientes datos:
+// - Nombre del estudiante
+// - Promedio final
+// - Ingreso familiar mensual
+// - Porcentaje de asistencia
+// REGLAS:
+// 1. Si el promedio final es mayor o igual a 16,
+//    entonces el estudiante pasa a una segunda evaluación:
+//    1.1. Si el ingreso familiar mensual es menor o igual a 1200,
+//         obtiene una "BECA COMPLETA".
+//    1.2. Si no cumple esa condición,
+//         obtiene una "BECA PARCIAL".
+// 2. Si el promedio final es menor a 16,
+//    entonces se debe evaluar otra condición:
+//    2.1. Si el promedio final es mayor o igual a 13,
+//         pasa a revisar la asistencia:
+//         2.1.1. Si la asistencia es mayor o igual a 90%,
+//                obtiene una "MEDIA BECA DE APOYO".
+//         2.1.2. Si no cumple con esa asistencia,
+//                no obtiene beca.
+//    2.2. Si el promedio final es menor a 13,
+//         no obtiene beca.
+// El programa debe mostrar al final:
+// - Nombre del estudiante
+// - Promedio final
+// - Ingreso familiar
+// - Asistencia
+// - Tipo de beca obtenida o si no obtuvo beca
+//
+// INDICACION:
+// Resolver este problema usando condicionales dobles anidadas.
+// ==========================================================
+
+Proceso AsignacionDeBecaUniversitaria
+	Definir nombre, tipoBeca Como Cadena
+	Definir promedio, ingresoFamiliar, asistencia Como Real
+	
+	Escribir "======================================="
+	Escribir "   SISTEMA DE ASIGNACION DE BECAS"
+	Escribir "======================================="
+	
+	Escribir "Ingrese el nombre del estudiante:"
+	Leer nombre
+	
+	Escribir "Ingrese el promedio final:"
+	Leer promedio
+	
+	Escribir "Ingrese el ingreso familiar mensual:"
+	Leer ingresoFamiliar
+	
+	Escribir "Ingrese el porcentaje de asistencia:"
+	Leer asistencia
+	
+	Si promedio >= 16 Entonces
+		Si ingresoFamiliar <= 1200 Entonces
+			tipoBeca <- "BECA COMPLETA"
+		SiNo
+			tipoBeca <- "BECA PARCIAL"
+		FinSi
+	SiNo
+		Si promedio >= 13 Entonces
+			Si asistencia >= 90 Entonces
+				tipoBeca <- "MEDIA BECA DE APOYO"
+			SiNo
+				tipoBeca <- "NO OBTIENE BECA"
+			FinSi
+		SiNo
+			tipoBeca <- "NO OBTIENE BECA"
+		FinSi
+	FinSi
+	
+	Escribir "======================================="
+	Escribir "RESULTADO DE LA EVALUACION"
+	Escribir "Nombre del estudiante: ", nombre
+	Escribir "Promedio final: ", promedio
+	Escribir "Ingreso familiar mensual: S/ ", ingresoFamiliar
+	Escribir "Porcentaje de asistencia: ", asistencia, "%"
+	Escribir "Tipo de beca: ", tipoBeca
+	Escribir "======================================="
+FinProceso
