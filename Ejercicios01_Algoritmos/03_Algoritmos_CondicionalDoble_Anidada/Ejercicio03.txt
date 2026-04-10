@@ -1,0 +1,26 @@
+// Desarrolle un algoritmo en PSeInt que permita ingresar el nombre 
+// de un estudiante y su nota final. El programa debe determinar si 
+// el estudiante está aprobado o desaprobado. Se considera aprobado 
+// si su nota es mayor o igual a 11; en caso contrario, está desaprobado. 
+// Finalmente, mostrar el nombre, la nota y el estado del estudiante.
+
+Proceso Ejercicio03
+	Definir nombre Como Cadena
+	Definir nota Como Real
+	
+	Escribir "Ingrese el nombre del estudiante:"
+	Leer nombre
+		
+	Escribir "Ingrese la nota final:"
+	Leer nota
+		
+	Si nota >= 11 Entonces
+		Escribir "Estudiante: ", nombre
+		Escribir "Nota final: ", nota
+		Escribir "Estado: APROBADO"
+	SiNo
+		Escribir "Estudiante: ", nombre
+		Escribir "Nota final: ", nota
+		Escribir "Estado: DESAPROBADO"
+	FinSi
+FinProceso
