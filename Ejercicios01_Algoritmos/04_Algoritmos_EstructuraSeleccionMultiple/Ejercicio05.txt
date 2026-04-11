@@ -1,0 +1,77 @@
+// Leer los coeficientes coefA, coefB y coefC de una ecuacion cuadratica
+// de la forma coefA*x^2 + coefB*x + coefC = 0.
+// Analizar el discriminante y determinar si la ecuacion tiene:
+// dos soluciones reales diferentes, una solucion real doble
+// o ninguna solucion real.
+// Usar estructura de seleccion multiple.
+
+Proceso Ecuacion_Cuadratica_Segun
+	Definir coefA, coefB, coefC Como Real
+	Definir discriminante, solucion1, solucion2 Como Real
+	Definir casoPrincipal, tipoDiscriminante Como Entero
+	
+	Escribir "RESOLVER ECUACION CUADRATICA"
+	Escribir "Ingrese coefA, coefB y coefC:"
+	Leer coefA, coefB, coefC
+	
+	casoPrincipal <- 0
+	
+	Si coefA <> 0 Entonces
+		casoPrincipal <- 1
+	Sino
+		Si coefB <> 0 Entonces
+			casoPrincipal <- 2
+		Sino
+			casoPrincipal <- 3
+		FinSi
+	FinSi
+	
+	Segun casoPrincipal Hacer
+		
+		1:
+			discriminante <- coefB^2 - 4 * coefA * coefC
+			
+			Si discriminante > 0 Entonces
+				tipoDiscriminante <- 1
+			Sino
+				Si discriminante = 0 Entonces
+					tipoDiscriminante <- 2
+				Sino
+					tipoDiscriminante <- 3
+				FinSi
+			FinSi
+			
+			Segun tipoDiscriminante Hacer
+				
+				1:
+					solucion1 <- (-coefB + Rc(discriminante)) / (2 * coefA)
+					solucion2 <- (-coefB - Rc(discriminante)) / (2 * coefA)
+					
+					Escribir "La ecuacion tiene dos soluciones reales diferentes:"
+					Escribir "x1 = ", solucion1
+					Escribir "x2 = ", solucion2
+					
+				2:
+					solucion1 <- -coefB / (2 * coefA)
+					
+					Escribir "La ecuacion tiene una solucion real doble:"
+					Escribir "x = ", solucion1
+					
+				3:
+					Escribir "La ecuacion no tiene soluciones reales."
+					
+			FinSegun
+			
+		2:
+			Escribir "La ecuacion es lineal, no cuadratica."
+			Escribir "La solucion es x = ", -coefC / coefB
+			
+		3:
+			Si coefC = 0 Entonces
+				Escribir "La expresion tiene infinitas soluciones."
+			Sino
+				Escribir "La expresion no tiene solucion."
+			FinSi
+			
+	FinSegun	
+FinProceso
