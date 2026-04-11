@@ -1,0 +1,140 @@
+// Leer los coeficientes a, b y c de la funcion racional f(x)=1/(ax^2+bx+c),
+// junto con un intervalo [limInf, limSup] y la cantidad de subintervalos.
+// Calcular numericamente la integral definida en ese intervalo usando
+// el metodo del trapecio, solo si el denominador no se anula dentro
+// del intervalo. Analizar los casos segun el discriminante del polinomio
+// ax^2+bx+c usando estructura de seleccion multiple.
+
+Proceso Integral_Racional_SeleccionMultiple
+	
+	Definir coefA, coefB, coefC Como Real
+	Definir limInf, limSup Como Real
+	Definir delta, raiz1, raiz2 Como Real
+	Definir paso, puntoX, sumaTrap, integralAprox Como Real
+	Definir denInf, denSup Como Real
+	Definir subInt, i Como Entero
+	Definir casoEntrada, tipoDiscriminante, permisoIntegral Como Entero
+	
+	Escribir "CALCULO DE INTEGRAL DE 1/(ax^2+bx+c) POR TRAPECIOS"
+	Escribir "Ingrese coefA, coefB y coefC:"
+	Leer coefA, coefB, coefC
+	
+	Escribir "Ingrese limite inferior y limite superior:"
+	Leer limInf, limSup
+	
+	Escribir "Ingrese la cantidad de subintervalos:"
+	Leer subInt
+	
+	casoEntrada <- 0
+	
+	Si limInf < limSup Entonces
+		Si subInt > 0 Entonces
+			Si coefA <> 0 Entonces
+				casoEntrada <- 1
+			Sino
+				Si coefB <> 0 Entonces
+					casoEntrada <- 2
+				Sino
+					casoEntrada <- 3
+				FinSi
+			FinSi
+		Sino
+			casoEntrada <- 5
+		FinSi
+	Sino
+		Si subInt > 0 Entonces
+			casoEntrada <- 4
+		Sino
+			casoEntrada <- 6
+		FinSi
+	FinSi
+	
+	Segun casoEntrada Hacer
+		
+		1:
+			delta <- coefB^2 - 4 * coefA * coefC
+			
+			Si delta < 0 Entonces
+				tipoDiscriminante <- 1
+			Sino
+				Si delta = 0 Entonces
+					tipoDiscriminante <- 2
+				Sino
+					tipoDiscriminante <- 3
+				FinSi
+			FinSi
+			
+			permisoIntegral <- 0
+			
+			Segun tipoDiscriminante Hacer
+				
+				1:
+					permisoIntegral <- 1
+					
+				2:
+					raiz1 <- -coefB / (2 * coefA)
+					
+					Si raiz1 >= limInf Y raiz1 <= limSup Entonces
+						permisoIntegral <- 2
+					Sino
+						permisoIntegral <- 1
+					FinSi
+					
+				3:
+					raiz1 <- (-coefB - Rc(delta)) / (2 * coefA)
+					raiz2 <- (-coefB + Rc(delta)) / (2 * coefA)
+					
+					Si (raiz1 >= limInf Y raiz1 <= limSup) O (raiz2 >= limInf Y raiz2 <= limSup) Entonces
+						permisoIntegral <- 2
+					Sino
+						permisoIntegral <- 1
+					FinSi
+					
+			FinSegun
+			
+			Segun permisoIntegral Hacer
+				
+				1:
+					paso <- (limSup - limInf) / subInt
+					sumaTrap <- 0
+					
+					Para i <- 1 Hasta subInt - 1 Hacer
+						puntoX <- limInf + i * paso
+						sumaTrap <- sumaTrap + 1 / (coefA * puntoX^2 + coefB * puntoX + coefC)
+					FinPara
+					
+					denInf <- coefA * limInf^2 + coefB * limInf + coefC
+					denSup <- coefA * limSup^2 + coefB * limSup + coefC
+					
+					integralAprox <- paso * ( ((1 / denInf) + (1 / denSup)) / 2 + sumaTrap )
+					
+					Escribir "Integral aproximada = ", integralAprox
+					
+				2:
+					Escribir "No se puede calcular la integral."
+					Escribir "El denominador se anula dentro del intervalo."
+					
+			FinSegun
+			
+		2:
+			Escribir "El denominador es lineal porque coefA = 0 y coefB <> 0."
+			Escribir "Este algoritmo fue planteado para denominador cuadratico."
+			
+		3:
+			Escribir "Expresion invalida: coefA = 0 y coefB = 0."
+			Escribir "El denominador es constante o nulo."
+			
+		4:
+			Escribir "Intervalo invalido. Debe cumplirse que limInf < limSup."
+			
+		5:
+			Escribir "La cantidad de subintervalos debe ser mayor que 0."
+			
+		6:
+			Escribir "Datos invalidos:"
+			Escribir "1) Debe cumplirse que limInf < limSup."
+			Escribir "2) La cantidad de subintervalos debe ser mayor que 0."
+			
+	FinSegun
+	
+FinProceso
