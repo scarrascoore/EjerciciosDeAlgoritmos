@@ -1,21 +1,23 @@
-# 🚀 Simulador-Pseint-Web
+# ◈ Simulador-Pseint-Web
 
-Aplicación web inspirada en **PSeInt**, desarrollada con **React + TypeScript**, que permite escribir pseudocódigo en un editor visual y visualizar su ejecución en una consola de salida, todo desde el navegador.
-
----
-
-## ✨ Descripción
-
-**Simulador-Pseint-Web** busca ofrecer una experiencia parecida a la de PSeInt en entorno web, con una interfaz clara y moderna dividida en dos paneles:
-
-- **Editor de pseudocódigo** en la parte izquierda
-- **Consola de salida** en la parte derecha
-
-El proyecto está siendo construido con una arquitectura limpia, pensando en escalabilidad, mantenibilidad y futura incorporación de un intérprete de pseudocódigo propio.
+Aplicación web inspirada en **PSeInt**, desarrollada con **React + TypeScript**, orientada a la escritura y futura ejecución de pseudocódigo desde el navegador mediante una interfaz dividida en dos paneles: **editor** y **consola de salida**.
 
 ---
 
-## 🛠 Tecnologías utilizadas
+## ◆ Descripción
+
+**Simulador-Pseint-Web** nace con la idea de trasladar la experiencia de práctica de algoritmos y lógica de programación a un entorno web moderno, claro y accesible.
+
+La interfaz principal está compuesta por:
+
+- **Panel izquierdo:** editor de pseudocódigo
+- **Panel derecho:** consola de salida o resultados de ejecución
+
+El proyecto se está construyendo con una base sólida, siguiendo principios inspirados en **Clean Architecture** y **Hexagonal Architecture**, para facilitar su crecimiento y mantenimiento.
+
+---
+
+## ◇ Tecnologías utilizadas
 
 - **React**
 - **TypeScript**
@@ -24,41 +26,43 @@ El proyecto está siendo construido con una arquitectura limpia, pensando en esc
 
 ---
 
-## 🎯 Objetivo del proyecto
+## ◉ Objetivo del proyecto
 
-Desarrollar un simulador web educativo que permita practicar lógica de programación mediante pseudocódigo, con una experiencia intuitiva, visual y accesible desde cualquier navegador.
+Desarrollar un simulador web educativo que permita practicar lógica de programación con pseudocódigo, ofreciendo una experiencia visual, estructurada y cercana a herramientas como PSeInt, pero adaptada a la web.
 
 ---
 
-## 📌 Características actuales
+## ▣ Características actuales
 
 - Interfaz web de dos paneles
 - Editor integrado para pseudocódigo
-- Consola de salida para mostrar resultados de ejecución
-- Base estructurada con enfoque de **Clean Architecture** y **Hexagonal Architecture**
-- Proyecto preparado para evolucionar hacia un intérprete real de pseudocódigo
+- Consola de salida visual
+- Estructura preparada para escalar
+- Organización basada en arquitectura limpia
+- Base lista para incorporar un intérprete de pseudocódigo
 
 ---
 
-## 📈 Estado del proyecto
+## ◌ Estado del proyecto
 
-🚧 **En desarrollo**
+**En desarrollo**
 
-Actualmente se está construyendo la base visual y arquitectónica del simulador.
+Actualmente se está implementando la base visual, la estructura del proyecto y la organización arquitectónica para evolucionar hacia un simulador funcional.
 
 ---
 
-## 🔮 Próximas mejoras
+## ✦ Próximas mejoras
 
 - Soporte para instrucciones como `Escribir` y `Leer`
 - Manejo de variables
 - Evaluación de expresiones
-- Validaciones y mensajes de error
+- Validación de sintaxis
+- Mensajes de error más descriptivos
 - Ejecución paso a paso
 - Guardado local de algoritmos
 
 ---
 
-## 👨‍💻 Autor
+## ⌘ Autor
 
-Proyecto desarrollado como parte de un proceso de aprendizaje y construcción de portafolio en desarrollo web y arquitectura de software.
+Proyecto desarrollado como parte de un proceso de aprendizaje, práctica de arquitectura de software y construcción de portafolio en desarrollo web.
