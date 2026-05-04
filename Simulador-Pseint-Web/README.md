@@ -22,7 +22,6 @@ El proyecto se está construyendo con una base sólida, siguiendo principios ins
 - **React**
 - **TypeScript**
 - **Vite**
-- **Monaco Editor**
 
 ---
 
