@@ -1,5 +1,5 @@
-import type { ExecutionResult } from "../../domain/models/ExecutionResult";
+import type { ProgramIOPort } from "./ProgramIOPort";
 
 export interface ProgramRunnerPort {
-  run(code: string): Promise<ExecutionResult>;
+  run(code: string, io: ProgramIOPort): Promise<void>;
 }
