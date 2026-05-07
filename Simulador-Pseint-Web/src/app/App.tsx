@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { RunProgramUseCase } from "../application/use-cases/RunProgramUseCase";
 import type { ConsoleLine } from "../domain/models/ConsoleLine";
-import { MockProgramRunner } from "../infrastructure/execution/MockProgramRunner";
+import { PseintProgramRunner } from "../infrastructure/execution/PseintProgramRunner";
 import { defaultProgram } from "../shared/constants/defaultProgram";
 import { ConsolePane } from "../ui/components/ConsolePane";
 import { EditorPane } from "../ui/components/EditorPane";
@@ -19,7 +19,7 @@ export default function App() {
   ]);
 
   const runProgramUseCase = useMemo(() => {
-    return new RunProgramUseCase(new MockProgramRunner());
+    return new RunProgramUseCase(new PseintProgramRunner());
   }, []);
 
   const handleRun = async () => {
