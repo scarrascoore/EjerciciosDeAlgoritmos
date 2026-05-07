@@ -213,3 +213,53 @@ button {
     grid-template-rows: auto 1fr;
   }
 }
+
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.console__inputRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #1e293b;
+}
+
+.console__prompt {
+  color: #f8fafc;
+  font-weight: 600;
+  font-family: "Cascadia Code", "Consolas", monospace;
+}
+
+.console__input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid #334155;
+  background: #0f172a;
+  color: #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  outline: none;
+  font-family: "Cascadia Code", "Consolas", monospace;
+}
+
+.console__input:focus {
+  border-color: #60a5fa;
+}
+
+.console__send {
+  border: 1px solid #334155;
+  background: #1e293b;
+  color: #f8fafc;
+  border-radius: 8px;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+
+.console__send:hover {
+  background: #273449;
+}
