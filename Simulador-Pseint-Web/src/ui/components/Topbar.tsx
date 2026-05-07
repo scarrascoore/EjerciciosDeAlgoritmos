@@ -1,9 +1,10 @@
 interface TopbarProps {
   onRun: () => void;
   onClearConsole: () => void;
+  isRunning: boolean;
 }
 
-export function Topbar({ onRun, onClearConsole }: TopbarProps) {
+export function Topbar({ onRun, onClearConsole, isRunning }: TopbarProps) {
   return (
     <header className="topbar">
       <div className="topbar__brand">
@@ -17,11 +18,20 @@ export function Topbar({ onRun, onClearConsole }: TopbarProps) {
       </div>
 
       <div className="topbar__actions">
-        <button className="btn btn--secondary" onClick={onClearConsole}>
+        <button
+          className="btn btn--secondary"
+          onClick={onClearConsole}
+          disabled={isRunning}
+        >
           Limpiar consola
         </button>
-        <button className="btn btn--primary" onClick={onRun}>
-          Ejecutar
+
+        <button
+          className="btn btn--primary"
+          onClick={onRun}
+          disabled={isRunning}
+        >
+          {isRunning ? "Ejecutando..." : "Ejecutar"}
         </button>
       </div>
     </header>
