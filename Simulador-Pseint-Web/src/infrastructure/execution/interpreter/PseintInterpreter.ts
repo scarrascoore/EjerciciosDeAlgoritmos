@@ -1,3 +1,4 @@
+import type { ProgramIOPort } from "../../../application/ports/ProgramIOPort";
 import type {
   AssignmentStatementNode,
   ProgramNode,
@@ -5,57 +6,36 @@ import type {
   StatementNode,
   WriteStatementNode,
 } from "../../../domain/ast/AstNodes";
-import type { ConsoleLine } from "../../../domain/models/ConsoleLine";
-import type { ExecutionResult } from "../../../domain/models/ExecutionResult";
 import type { RuntimeValue } from "../../../domain/models/RuntimeValue";
 import { ExpressionEvaluator } from "./ExpressionEvaluator";
 
 export class PseintInterpreter {
   private readonly evaluator = new ExpressionEvaluator();
 
-  async execute(program: ProgramNode): Promise<ExecutionResult> {
-    const consoleLines: ConsoleLine[] = [];
+  async execute(program: ProgramNode, io: ProgramIOPort): Promise<void> {
     const variables = new Map<string, RuntimeValue>();
 
-    try {
-      consoleLines.push(
-        createConsoleLine(
-          `Iniciando ejecución del algoritmo "${program.name}"...`,
-          "system"
-        )
-      );
+    io.print(`Iniciando ejecución del algoritmo "${program.name}"...`, "system");
 
-      for (const statement of program.body) {
-        await this.executeStatement(statement, variables, consoleLines);
-      }
-
-      consoleLines.push(
-        createConsoleLine("Ejecución finalizada con éxito.", "system")
-      );
-
-      return { lines: consoleLines };
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Error desconocido de ejecución.";
-
-      consoleLines.push(createConsoleLine(message, "error"));
-
-      return { lines: consoleLines };
+    for (const statement of program.body) {
+      await this.executeStatement(statement, variables, io);
     }
+
+    io.print("Ejecución finalizada con éxito.", "system");
   }
 
   private async executeStatement(
     statement: StatementNode,
     variables: Map<string, RuntimeValue>,
-    consoleLines: ConsoleLine[]
+    io: ProgramIOPort
   ): Promise<void> {
     switch (statement.type) {
       case "write":
-        this.executeWrite(statement, variables, consoleLines);
+        this.executeWrite(statement, variables, io);
         return;
 
       case "read":
-        await this.executeRead(statement, variables, consoleLines);
+        await this.executeRead(statement, variables, io);
         return;
 
       case "assign":
@@ -67,7 +47,7 @@ export class PseintInterpreter {
   private executeWrite(
     statement: WriteStatementNode,
     variables: Map<string, RuntimeValue>,
-    consoleLines: ConsoleLine[]
+    io: ProgramIOPort
   ): void {
     const text = statement.args
       .map((arg) => {
@@ -76,32 +56,20 @@ export class PseintInterpreter {
       })
       .join("");
 
-    consoleLines.push(createConsoleLine(text, "success"));
+    io.print(text, "success");
   }
 
   private async executeRead(
     statement: ReadStatementNode,
     variables: Map<string, RuntimeValue>,
-    consoleLines: ConsoleLine[]
+    io: ProgramIOPort
   ): Promise<void> {
-    consoleLines.push(
-      createConsoleLine(
-        `Esperando entrada para: ${statement.variable}...`,
-        "system"
-      )
-    );
-
-    const input = window.prompt(`Ingresa el valor para ${statement.variable}`) ?? "";
+    const input = await io.requestInput(statement.variable);
     const parsedValue = inferValue(input);
 
     variables.set(normalizeName(statement.variable), parsedValue);
 
-    consoleLines.push(
-      createConsoleLine(
-        `${statement.variable} <- ${renderValue(parsedValue)}`,
-        "info"
-      )
-    );
+    io.print(`${statement.variable} <- ${renderValue(parsedValue)}`, "info");
   }
 
   private executeAssignment(
@@ -148,18 +116,4 @@ function renderValue(value: RuntimeValue): string {
   if (value === null) return "Nulo";
   if (typeof value === "boolean") return value ? "Verdadero" : "Falso";
   return String(value);
-}
-
-function createConsoleLine(
-  text: string,
-  kind: "info" | "success" | "error" | "system"
-): ConsoleLine {
-  return {
-    id: crypto.randomUUID(),
-    text,
-    kind,
-    timestamp: new Date().toLocaleTimeString("es-PE", {
-      hour12: false,
-    }),
-  };
 }
