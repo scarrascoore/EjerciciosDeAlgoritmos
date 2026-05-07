@@ -1,4 +1,4 @@
-import type { ExecutionResult } from "../../domain/models/ExecutionResult";
+import type { ProgramIOPort } from "../ports/ProgramIOPort";
 import type { ProgramRunnerPort } from "../ports/ProgramRunnerPort";
 
 export class RunProgramUseCase {
@@ -8,26 +8,12 @@ export class RunProgramUseCase {
     this.runner = runner;
   }
 
-  async execute(code: string): Promise<ExecutionResult> {
+  async execute(code: string, io: ProgramIOPort): Promise<void> {
     if (!code.trim()) {
-      return {
-        lines: [
-          {
-            id: crypto.randomUUID(),
-            text: "No hay código para ejecutar.",
-            kind: "error",
-            timestamp: getCurrentTime(),
-          },
-        ],
-      };
+      io.print("No hay código para ejecutar.", "error");
+      return;
     }
 
-    return this.runner.run(code);
+    await this.runner.run(code, io);
   }
-}
-
-function getCurrentTime(): string {
-  return new Date().toLocaleTimeString("es-PE", {
-    hour12: false,
-  });
 }
