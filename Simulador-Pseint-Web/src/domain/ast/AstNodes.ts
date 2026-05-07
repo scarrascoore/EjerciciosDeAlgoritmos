@@ -1,5 +1,5 @@
 export interface ProgramNode {
-    type: "Program";
+    type: "program";
     name: string;
     body: StatementNode[];
 }
@@ -24,6 +24,6 @@ export interface ReadStatementNode {
 export interface AssignmentStatementNode {
     type: "assign";
     variable: string;
-    value: string;
+    expression: string;
     line: number;
 }
