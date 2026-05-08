@@ -1,6 +1,7 @@
 import type { ProgramIOPort } from "../../../application/ports/ProgramIOPort";
 import type {
   AssignmentStatementNode,
+  IfStatementNode,
   ProgramNode,
   ReadStatementNode,
   StatementNode,
@@ -40,6 +41,10 @@ export class PseintInterpreter {
 
       case "assign":
         this.executeAssignment(statement, variables);
+        return;
+
+      case "if":
+        await this.executeIf(statement, variables, io);
         return;
     }
   }
@@ -83,6 +88,32 @@ export class PseintInterpreter {
     );
 
     variables.set(normalizeName(statement.variable), value);
+  }
+
+  private async executeIf(
+    statement: IfStatementNode,
+    variables: Map<string, RuntimeValue>,
+    io: ProgramIOPort
+  ): Promise<void> {
+    const conditionResult = this.evaluator.evaluate(
+      statement.condition,
+      variables,
+      statement.line
+    );
+
+    if (typeof conditionResult !== "boolean") {
+      throw new Error(
+        `[Línea ${statement.line}] La condición del Si debe devolver Verdadero o Falso.`
+      );
+    }
+
+    const branch = conditionResult
+      ? statement.thenBranch
+      : statement.elseBranch;
+
+    for (const nestedStatement of branch) {
+      await this.executeStatement(nestedStatement, variables, io);
+    }
   }
 }
 
