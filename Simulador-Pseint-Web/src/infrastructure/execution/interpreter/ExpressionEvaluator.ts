@@ -8,12 +8,23 @@ interface Token {
 }
 
 const OPERATOR_PRECEDENCE: Record<string, number> = {
-  "+": 1,
-  "-": 1,
-  "*": 2,
-  "/": 2,
-  "%": 2,
+  O: 1,
+  Y: 2,
+  NO: 3,
+  "=": 4,
+  "<>": 4,
+  "<": 4,
+  ">": 4,
+  "<=": 4,
+  ">=": 4,
+  "+": 5,
+  "-": 5,
+  "*": 6,
+  "/": 6,
+  "%": 6,
 };
+
+const RIGHT_ASSOCIATIVE = new Set(["NO"]);
 
 export class ExpressionEvaluator {
   evaluate(
@@ -33,6 +44,7 @@ function tokenize(expression: string): Token[] {
 
   while (index < expression.length) {
     const char = expression[index];
+    const next = expression[index + 1];
 
     if (/\s/.test(char)) {
       index++;
@@ -79,24 +91,25 @@ function tokenize(expression: string): Token[] {
       continue;
     }
 
-    if (/[a-zA-Z_]/.test(char)) {
-      let value = char;
-      index++;
-
-      while (index < expression.length && /\w/.test(expression[index])) {
-        value += expression[index];
-        index++;
-      }
-
-      tokens.push({
-        type: "identifier",
-        value,
-      });
-
+    if (char === "<" && next === "=") {
+      tokens.push({ type: "operator", value: "<=" });
+      index += 2;
       continue;
     }
 
-    if ("+-*/%".includes(char)) {
+    if (char === ">" && next === "=") {
+      tokens.push({ type: "operator", value: ">=" });
+      index += 2;
+      continue;
+    }
+
+    if (char === "<" && next === ">") {
+      tokens.push({ type: "operator", value: "<>" });
+      index += 2;
+      continue;
+    }
+
+    if ("+-*/%=<>".includes(char)) {
       tokens.push({
         type: "operator",
         value: char,
@@ -111,6 +124,40 @@ function tokenize(expression: string): Token[] {
         value: char,
       });
       index++;
+      continue;
+    }
+
+    if (/[a-zA-Z_]/.test(char)) {
+      let value = char;
+      index++;
+
+      while (index < expression.length && /\w/.test(expression[index])) {
+        value += expression[index];
+        index++;
+      }
+
+      const normalized = normalizeWord(value);
+
+      if (normalized === "y") {
+        tokens.push({ type: "operator", value: "Y" });
+        continue;
+      }
+
+      if (normalized === "o") {
+        tokens.push({ type: "operator", value: "O" });
+        continue;
+      }
+
+      if (normalized === "no") {
+        tokens.push({ type: "operator", value: "NO" });
+        continue;
+      }
+
+      tokens.push({
+        type: "identifier",
+        value,
+      });
+
       continue;
     }
 
@@ -139,7 +186,7 @@ function isStartOfNegativeNumber(
   const previous = tokens[tokens.length - 1];
 
   return (
-    (previous.type === "operator") ||
+    previous.type === "operator" ||
     (previous.type === "paren" && previous.value === "(")
   );
 }
@@ -162,14 +209,22 @@ function toRpn(tokens: Token[]): Token[] {
       while (operators.length > 0) {
         const top = operators[operators.length - 1];
 
-        if (
-          top.type === "operator" &&
-          OPERATOR_PRECEDENCE[top.value] >= OPERATOR_PRECEDENCE[token.value]
-        ) {
-          output.push(operators.pop()!);
-        } else {
+        if (top.type !== "operator") {
           break;
         }
+
+        const currentPrecedence = OPERATOR_PRECEDENCE[token.value];
+        const topPrecedence = OPERATOR_PRECEDENCE[top.value];
+
+        const shouldPop = RIGHT_ASSOCIATIVE.has(token.value)
+          ? topPrecedence > currentPrecedence
+          : topPrecedence >= currentPrecedence;
+
+        if (!shouldPop) {
+          break;
+        }
+
+        output.push(operators.pop()!);
       }
 
       operators.push(token);
@@ -230,19 +285,19 @@ function evaluateRpn(
     }
 
     if (token.type === "identifier") {
-      const lower = normalizeName(token.value);
+      const normalized = normalizeWord(token.value);
 
-      if (lower === "verdadero") {
+      if (normalized === "verdadero") {
         stack.push(true);
         continue;
       }
 
-      if (lower === "falso") {
+      if (normalized === "falso") {
         stack.push(false);
         continue;
       }
 
-      if (!variables.has(lower)) {
+      if (!variables.has(normalized)) {
         throw new Error(
           formatLineError(
             `La variable "${token.value}" no tiene valor asignado.`,
@@ -251,11 +306,30 @@ function evaluateRpn(
         );
       }
 
-      stack.push(variables.get(lower)!);
+      stack.push(variables.get(normalized)!);
       continue;
     }
 
     if (token.type === "operator") {
+      if (token.value === "NO") {
+        const operand = stack.pop();
+
+        if (operand === undefined) {
+          throw new Error(
+            formatLineError(`La expresión lógica está incompleta.`, lineNumber)
+          );
+        }
+
+        if (typeof operand !== "boolean") {
+          throw new Error(
+            formatLineError(`El operador "No" requiere un valor booleano.`, lineNumber)
+          );
+        }
+
+        stack.push(!operand);
+        continue;
+      }
+
       const right = stack.pop();
       const left = stack.pop();
 
@@ -284,31 +358,67 @@ function applyOperator(
   right: RuntimeValue,
   lineNumber?: number
 ): RuntimeValue {
-  if (operator === "+") {
-    if (typeof left === "string" || typeof right === "string") {
-      return `${renderValue(left)}${renderValue(right)}`;
-    }
-
-    validateNumbers(left, right, lineNumber);
-    return (left as number) + (right as number);
-  }
-
-  validateNumbers(left, right, lineNumber);
-
   switch (operator) {
+    case "+":
+      if (typeof left === "string" || typeof right === "string") {
+        return `${renderValue(left)}${renderValue(right)}`;
+      }
+      validateNumbers(left, right, lineNumber);
+      return (left as number) + (right as number);
+
     case "-":
+      validateNumbers(left, right, lineNumber);
       return (left as number) - (right as number);
+
     case "*":
+      validateNumbers(left, right, lineNumber);
       return (left as number) * (right as number);
+
     case "/":
+      validateNumbers(left, right, lineNumber);
       if ((right as number) === 0) {
         throw new Error(formatLineError(`No se puede dividir entre cero.`, lineNumber));
       }
       return (left as number) / (right as number);
+
     case "%":
+      validateNumbers(left, right, lineNumber);
       return (left as number) % (right as number);
+
+    case "=":
+      return areEqual(left, right);
+
+    case "<>":
+      return !areEqual(left, right);
+
+    case "<":
+      validateNumbers(left, right, lineNumber);
+      return (left as number) < (right as number);
+
+    case ">":
+      validateNumbers(left, right, lineNumber);
+      return (left as number) > (right as number);
+
+    case "<=":
+      validateNumbers(left, right, lineNumber);
+      return (left as number) <= (right as number);
+
+    case ">=":
+      validateNumbers(left, right, lineNumber);
+      return (left as number) >= (right as number);
+
+    case "Y":
+      validateBooleans(left, right, lineNumber);
+      return (left as boolean) && (right as boolean);
+
+    case "O":
+      validateBooleans(left, right, lineNumber);
+      return (left as boolean) || (right as boolean);
+
     default:
-      throw new Error(formatLineError(`Operador no soportado: ${operator}`, lineNumber));
+      throw new Error(
+        formatLineError(`Operador no soportado: ${operator}`, lineNumber)
+      );
   }
 }
 
@@ -319,15 +429,28 @@ function validateNumbers(
 ): void {
   if (typeof left !== "number" || typeof right !== "number") {
     throw new Error(
-      formatLineError(
-        `La operación requiere valores numéricos.`,
-        lineNumber
-      )
+      formatLineError(`La operación requiere valores numéricos.`, lineNumber)
     );
   }
 }
 
-function normalizeName(value: string): string {
+function validateBooleans(
+  left: RuntimeValue,
+  right: RuntimeValue,
+  lineNumber?: number
+): void {
+  if (typeof left !== "boolean" || typeof right !== "boolean") {
+    throw new Error(
+      formatLineError(`La operación lógica requiere valores booleanos.`, lineNumber)
+    );
+  }
+}
+
+function areEqual(left: RuntimeValue, right: RuntimeValue): boolean {
+  return left === right;
+}
+
+function normalizeWord(value: string): string {
   return value.trim().toLowerCase();
 }
 
