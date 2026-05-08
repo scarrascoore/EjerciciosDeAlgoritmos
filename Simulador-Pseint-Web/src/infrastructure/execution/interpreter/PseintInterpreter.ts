@@ -5,10 +5,13 @@ import type {
   ProgramNode,
   ReadStatementNode,
   StatementNode,
+  WhileStatementNode,
   WriteStatementNode,
 } from "../../../domain/ast/AstNodes";
 import type { RuntimeValue } from "../../../domain/models/RuntimeValue";
 import { ExpressionEvaluator } from "./ExpressionEvaluator";
+
+const MAX_LOOP_ITERATIONS = 10000;
 
 export class PseintInterpreter {
   private readonly evaluator = new ExpressionEvaluator();
@@ -45,6 +48,10 @@ export class PseintInterpreter {
 
       case "if":
         await this.executeIf(statement, variables, io);
+        return;
+
+      case "while":
+        await this.executeWhile(statement, variables, io);
         return;
     }
   }
@@ -107,12 +114,48 @@ export class PseintInterpreter {
       );
     }
 
-    const branch = conditionResult
-      ? statement.thenBranch
-      : statement.elseBranch;
+    const branch = conditionResult ? statement.thenBranch : statement.elseBranch;
 
     for (const nestedStatement of branch) {
       await this.executeStatement(nestedStatement, variables, io);
+    }
+  }
+
+  private async executeWhile(
+    statement: WhileStatementNode,
+    variables: Map<string, RuntimeValue>,
+    io: ProgramIOPort
+  ): Promise<void> {
+    let iterations = 0;
+
+    while (true) {
+      const conditionResult = this.evaluator.evaluate(
+        statement.condition,
+        variables,
+        statement.line
+      );
+
+      if (typeof conditionResult !== "boolean") {
+        throw new Error(
+          `[Línea ${statement.line}] La condición del Mientras debe devolver Verdadero o Falso.`
+        );
+      }
+
+      if (!conditionResult) {
+        break;
+      }
+
+      iterations++;
+
+      if (iterations > MAX_LOOP_ITERATIONS) {
+        throw new Error(
+          `[Línea ${statement.line}] Se superó el límite de ${MAX_LOOP_ITERATIONS} iteraciones. Posible bucle infinito.`
+        );
+      }
+
+      for (const nestedStatement of statement.body) {
+        await this.executeStatement(nestedStatement, variables, io);
+      }
     }
   }
 }
