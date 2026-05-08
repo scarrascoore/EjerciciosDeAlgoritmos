@@ -4,6 +4,7 @@ import type {
   ProgramNode,
   ReadStatementNode,
   StatementNode,
+  WhileStatementNode,
   WriteStatementNode,
 } from "../../../domain/ast/AstNodes";
 
@@ -75,6 +76,11 @@ export class PseintLineParser {
 
       if (/^Si\s+.+\s+Entonces$/i.test(trimmed)) {
         statements.push(this.parseIf());
+        continue;
+      }
+
+      if (/^Mientras\s+.+\s+Hacer$/i.test(trimmed)) {
+        statements.push(this.parseWhile());
         continue;
       }
 
@@ -154,6 +160,41 @@ export class PseintLineParser {
       condition,
       thenBranch,
       elseBranch,
+      line: lineNumber,
+    };
+  }
+
+  private parseWhile(): WhileStatementNode {
+    const lineNumber = this.current + 1;
+    const line = this.currentLine().trim();
+
+    const match = line.match(/^Mientras\s+(.+)\s+Hacer$/i);
+
+    if (!match) {
+      throw new Error(
+        `[Línea ${lineNumber}] Sintaxis inválida en Mientras. Ejemplo: Mientras i <= 10 Hacer`
+      );
+    }
+
+    const condition = match[1].trim();
+    this.current++;
+
+    const body = this.parseBlock(["FinMientras"]);
+
+    this.skipIgnorableLines();
+
+    if (this.isAtEnd() || !/^FinMientras$/i.test(this.currentLine().trim())) {
+      throw new Error(
+        `[Línea ${lineNumber}] La estructura Mientras debe cerrarse con "FinMientras".`
+      );
+    }
+
+    this.current++;
+
+    return {
+      type: "while",
+      condition,
+      body,
       line: lineNumber,
     };
   }
