@@ -1,5 +1,6 @@
 import type {
   AssignmentStatementNode,
+  ForStatementNode,
   IfStatementNode,
   ProgramNode,
   ReadStatementNode,
@@ -81,6 +82,11 @@ export class PseintLineParser {
 
       if (/^Mientras\s+.+\s+Hacer$/i.test(trimmed)) {
         statements.push(this.parseWhile());
+        continue;
+      }
+
+      if (/^Para\s+.+\s+Hacer$/i.test(trimmed)) {
+        statements.push(this.parseFor());
         continue;
       }
 
@@ -194,6 +200,47 @@ export class PseintLineParser {
     return {
       type: "while",
       condition,
+      body,
+      line: lineNumber,
+    };
+  }
+
+  private parseFor(): ForStatementNode {
+    const lineNumber = this.current + 1;
+    const line = this.currentLine().trim();
+
+    const match = line.match(
+      /^Para\s+([a-zA-Z_]\w*)\s*<-\s*(.+?)\s+Hasta\s+(.+?)(?:\s+Con\s+Paso\s+(.+?))?\s+Hacer$/i
+    );
+
+    if (!match) {
+      throw new Error(
+        `[Línea ${lineNumber}] Sintaxis inválida en Para. Ejemplo: Para i <- 1 Hasta 10 Con Paso 1 Hacer`
+      );
+    }
+
+    const [, variable, startExpression, endExpression, stepExpression] = match;
+
+    this.current++;
+
+    const body = this.parseBlock(["FinPara"]);
+
+    this.skipIgnorableLines();
+
+    if (this.isAtEnd() || !/^FinPara$/i.test(this.currentLine().trim())) {
+      throw new Error(
+        `[Línea ${lineNumber}] La estructura Para debe cerrarse con "FinPara".`
+      );
+    }
+
+    this.current++;
+
+    return {
+      type: "for",
+      variable: variable.trim(),
+      startExpression: startExpression.trim(),
+      endExpression: endExpression.trim(),
+      stepExpression: stepExpression?.trim() ?? null,
       body,
       line: lineNumber,
     };
