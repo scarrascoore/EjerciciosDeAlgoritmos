@@ -1,6 +1,7 @@
 import type { ProgramIOPort } from "../../../application/ports/ProgramIOPort";
 import type {
   AssignmentStatementNode,
+  DefineStatementNode,
   ForStatementNode,
   IfStatementNode,
   ProgramNode,
@@ -10,6 +11,12 @@ import type {
   WriteStatementNode,
 } from "../../../domain/ast/AstNodes";
 import type { RuntimeValue } from "../../../domain/models/RuntimeValue";
+import type { VariableType } from "../../../domain/models/VariableType";
+import {
+  coerceValueToType,
+  getDefaultValueForType,
+  parseInputToTypedValue,
+} from "../../../domain/models/VariableType";
 import { ExpressionEvaluator } from "./ExpressionEvaluator";
 
 const MAX_LOOP_ITERATIONS = 10000;
@@ -19,11 +26,12 @@ export class PseintInterpreter {
 
   async execute(program: ProgramNode, io: ProgramIOPort): Promise<void> {
     const variables = new Map<string, RuntimeValue>();
+    const declarations = new Map<string, VariableType>();
 
     io.print(`Iniciando ejecución del algoritmo "${program.name}"...`, "system");
 
     for (const statement of program.body) {
-      await this.executeStatement(statement, variables, io);
+      await this.executeStatement(statement, variables, declarations, io);
     }
 
     io.print("Ejecución finalizada con éxito.", "system");
@@ -32,32 +40,59 @@ export class PseintInterpreter {
   private async executeStatement(
     statement: StatementNode,
     variables: Map<string, RuntimeValue>,
+    declarations: Map<string, VariableType>,
     io: ProgramIOPort
   ): Promise<void> {
     switch (statement.type) {
+      case "define":
+        this.executeDefine(statement, variables, declarations);
+        return;
+
       case "write":
         this.executeWrite(statement, variables, io);
         return;
 
       case "read":
-        await this.executeRead(statement, variables, io);
+        await this.executeRead(statement, variables, declarations, io);
         return;
 
       case "assign":
-        this.executeAssignment(statement, variables);
+        this.executeAssignment(statement, variables, declarations);
         return;
 
       case "if":
-        await this.executeIf(statement, variables, io);
+        await this.executeIf(statement, variables, declarations, io);
         return;
 
       case "while":
-        await this.executeWhile(statement, variables, io);
+        await this.executeWhile(statement, variables, declarations, io);
         return;
 
       case "for":
-        await this.executeFor(statement, variables, io);
+        await this.executeFor(statement, variables, declarations, io);
         return;
+    }
+  }
+
+  private executeDefine(
+    statement: DefineStatementNode,
+    variables: Map<string, RuntimeValue>,
+    declarations: Map<string, VariableType>
+  ): void {
+    for (const variable of statement.variables) {
+      const normalizedName = normalizeName(variable);
+
+      if (declarations.has(normalizedName) || variables.has(normalizedName)) {
+        throw new Error(
+          `[Línea ${statement.line}] La variable "${variable}" ya fue declarada o usada previamente.`
+        );
+      }
+
+      declarations.set(normalizedName, statement.variableType);
+      variables.set(
+        normalizedName,
+        getDefaultValueForType(statement.variableType)
+      );
     }
   }
 
@@ -79,19 +114,26 @@ export class PseintInterpreter {
   private async executeRead(
     statement: ReadStatementNode,
     variables: Map<string, RuntimeValue>,
+    declarations: Map<string, VariableType>,
     io: ProgramIOPort
   ): Promise<void> {
     const input = await io.requestInput(statement.variable);
-    const parsedValue = inferValue(input);
+    const normalizedName = normalizeName(statement.variable);
+    const declaredType = declarations.get(normalizedName);
 
-    variables.set(normalizeName(statement.variable), parsedValue);
+    const parsedValue = declaredType
+      ? parseInputToTypedValue(input, declaredType, statement.line)
+      : inferValue(input);
+
+    variables.set(normalizedName, parsedValue);
 
     io.print(`${statement.variable} <- ${renderValue(parsedValue)}`, "info");
   }
 
   private executeAssignment(
     statement: AssignmentStatementNode,
-    variables: Map<string, RuntimeValue>
+    variables: Map<string, RuntimeValue>,
+    declarations: Map<string, VariableType>
   ): void {
     const value = this.evaluator.evaluate(
       statement.expression,
@@ -99,12 +141,19 @@ export class PseintInterpreter {
       statement.line
     );
 
-    variables.set(normalizeName(statement.variable), value);
+    this.assignVariable(
+      statement.variable,
+      value,
+      statement.line,
+      variables,
+      declarations
+    );
   }
 
   private async executeIf(
     statement: IfStatementNode,
     variables: Map<string, RuntimeValue>,
+    declarations: Map<string, VariableType>,
     io: ProgramIOPort
   ): Promise<void> {
     const conditionResult = this.evaluator.evaluate(
@@ -122,13 +171,14 @@ export class PseintInterpreter {
     const branch = conditionResult ? statement.thenBranch : statement.elseBranch;
 
     for (const nestedStatement of branch) {
-      await this.executeStatement(nestedStatement, variables, io);
+      await this.executeStatement(nestedStatement, variables, declarations, io);
     }
   }
 
   private async executeWhile(
     statement: WhileStatementNode,
     variables: Map<string, RuntimeValue>,
+    declarations: Map<string, VariableType>,
     io: ProgramIOPort
   ): Promise<void> {
     let iterations = 0;
@@ -159,7 +209,7 @@ export class PseintInterpreter {
       }
 
       for (const nestedStatement of statement.body) {
-        await this.executeStatement(nestedStatement, variables, io);
+        await this.executeStatement(nestedStatement, variables, declarations, io);
       }
     }
   }
@@ -167,6 +217,7 @@ export class PseintInterpreter {
   private async executeFor(
     statement: ForStatementNode,
     variables: Map<string, RuntimeValue>,
+    declarations: Map<string, VariableType>,
     io: ProgramIOPort
   ): Promise<void> {
     const startValue = this.evaluator.evaluate(
@@ -182,7 +233,11 @@ export class PseintInterpreter {
     );
 
     const stepValue = statement.stepExpression
-      ? this.evaluator.evaluate(statement.stepExpression, variables, statement.line)
+      ? this.evaluator.evaluate(
+          statement.stepExpression,
+          variables,
+          statement.line
+        )
       : 1;
 
     const startNumber = ensureNumber(
@@ -212,7 +267,13 @@ export class PseintInterpreter {
     const variableName = normalizeName(statement.variable);
     let iterations = 0;
 
-    variables.set(variableName, startNumber);
+    this.assignVariable(
+      statement.variable,
+      startNumber,
+      statement.line,
+      variables,
+      declarations
+    );
 
     while (true) {
       const currentValue = ensureNumber(
@@ -237,7 +298,7 @@ export class PseintInterpreter {
       }
 
       for (const nestedStatement of statement.body) {
-        await this.executeStatement(nestedStatement, variables, io);
+        await this.executeStatement(nestedStatement, variables, declarations, io);
       }
 
       const valueAfterBody = ensureNumber(
@@ -246,8 +307,31 @@ export class PseintInterpreter {
         `La variable de control "${statement.variable}" debe mantenerse numérica.`
       );
 
-      variables.set(variableName, valueAfterBody + stepNumber);
+      this.assignVariable(
+        statement.variable,
+        valueAfterBody + stepNumber,
+        statement.line,
+        variables,
+        declarations
+      );
     }
+  }
+
+  private assignVariable(
+    variableName: string,
+    value: RuntimeValue,
+    line: number,
+    variables: Map<string, RuntimeValue>,
+    declarations: Map<string, VariableType>
+  ): void {
+    const normalizedName = normalizeName(variableName);
+    const declaredType = declarations.get(normalizedName);
+
+    const finalValue = declaredType
+      ? coerceValueToType(value, declaredType, line)
+      : value;
+
+    variables.set(normalizedName, finalValue);
   }
 }
 
