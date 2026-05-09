@@ -1,3 +1,5 @@
+import type { VariableType } from "../models/VariableType";
+
 export interface ProgramNode {
   type: "program";
   name: string;
@@ -5,12 +7,20 @@ export interface ProgramNode {
 }
 
 export type StatementNode =
+  | DefineStatementNode
   | WriteStatementNode
   | ReadStatementNode
   | AssignmentStatementNode
   | IfStatementNode
   | WhileStatementNode
   | ForStatementNode;
+
+export interface DefineStatementNode {
+  type: "define";
+  variables: string[];
+  variableType: VariableType;
+  line: number;
+}
 
 export interface WriteStatementNode {
   type: "write";
