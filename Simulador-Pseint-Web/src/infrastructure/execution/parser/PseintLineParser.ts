@@ -1,5 +1,6 @@
 import type {
   AssignmentStatementNode,
+  DefineStatementNode,
   ForStatementNode,
   IfStatementNode,
   ProgramNode,
@@ -8,6 +9,7 @@ import type {
   WhileStatementNode,
   WriteStatementNode,
 } from "../../../domain/ast/AstNodes";
+import { normalizeVariableTypeToken } from "../../../domain/models/VariableType";
 
 export class PseintLineParser {
   private lines: string[] = [];
@@ -75,6 +77,12 @@ export class PseintLineParser {
         return statements;
       }
 
+      if (/^Definir\s+/i.test(trimmed)) {
+        statements.push(this.parseDefine(trimmed, this.current + 1));
+        this.current++;
+        continue;
+      }
+
       if (/^Si\s+.+\s+Entonces$/i.test(trimmed)) {
         statements.push(this.parseIf());
         continue;
@@ -112,6 +120,65 @@ export class PseintLineParser {
         `[Línea ${this.current + 1}] Instrucción no soportada todavía: "${trimmed}".`
       );
     }
+  }
+
+  private parseDefine(line: string, lineNumber: number): DefineStatementNode {
+    const match = line.match(/^Definir\s+(.+)\s+Como\s+([a-zA-ZÁÉÍÓÚáéíóú]+)$/i);
+
+    if (!match) {
+      throw new Error(
+        `[Línea ${lineNumber}] Sintaxis inválida en Definir. Ejemplo: Definir edad Como Entero`
+      );
+    }
+
+    const variablesPart = match[1].trim();
+    const rawType = match[2].trim();
+
+    const variableType = normalizeVariableTypeToken(rawType);
+
+    if (!variableType) {
+      throw new Error(
+        `[Línea ${lineNumber}] Tipo de variable no soportado: "${rawType}".`
+      );
+    }
+
+    const variables = variablesPart
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+
+    if (variables.length === 0) {
+      throw new Error(
+        `[Línea ${lineNumber}] Debes indicar al menos una variable en Definir.`
+      );
+    }
+
+    const unique = new Set<string>();
+
+    for (const variable of variables) {
+      if (!/^[a-zA-Z_]\w*$/.test(variable)) {
+        throw new Error(
+          `[Línea ${lineNumber}] Nombre de variable inválido: "${variable}".`
+        );
+      }
+
+      const normalized = variable.toLowerCase();
+
+      if (unique.has(normalized)) {
+        throw new Error(
+          `[Línea ${lineNumber}] La variable "${variable}" está repetida en la declaración.`
+        );
+      }
+
+      unique.add(normalized);
+    }
+
+    return {
+      type: "define",
+      variables,
+      variableType,
+      line: lineNumber,
+    };
   }
 
   private parseIf(): IfStatementNode {
