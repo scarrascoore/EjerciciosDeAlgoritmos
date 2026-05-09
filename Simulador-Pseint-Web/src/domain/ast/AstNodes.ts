@@ -9,7 +9,8 @@ export type StatementNode =
   | ReadStatementNode
   | AssignmentStatementNode
   | IfStatementNode
-  | WhileStatementNode;
+  | WhileStatementNode
+  | ForStatementNode;
 
 export interface WriteStatementNode {
   type: "write";
@@ -41,6 +42,16 @@ export interface IfStatementNode {
 export interface WhileStatementNode {
   type: "while";
   condition: string;
+  body: StatementNode[];
+  line: number;
+}
+
+export interface ForStatementNode {
+  type: "for";
+  variable: string;
+  startExpression: string;
+  endExpression: string;
+  stepExpression: string | null;
   body: StatementNode[];
   line: number;
 }
