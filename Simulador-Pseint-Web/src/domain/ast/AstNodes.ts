@@ -8,6 +8,7 @@ export interface ProgramNode {
 
 export type StatementNode =
   | DefineStatementNode
+  | DimensionStatementNode
   | WriteStatementNode
   | ReadStatementNode
   | AssignmentStatementNode
@@ -15,10 +16,22 @@ export type StatementNode =
   | WhileStatementNode
   | ForStatementNode;
 
+export interface VariableReferenceNode {
+  name: string;
+  indexExpression: string | null;
+}
+
 export interface DefineStatementNode {
   type: "define";
   variables: string[];
   variableType: VariableType;
+  line: number;
+}
+
+export interface DimensionStatementNode {
+  type: "dimension";
+  variable: string;
+  sizeExpression: string;
   line: number;
 }
 
@@ -30,13 +43,13 @@ export interface WriteStatementNode {
 
 export interface ReadStatementNode {
   type: "read";
-  variable: string;
+  target: VariableReferenceNode;
   line: number;
 }
 
 export interface AssignmentStatementNode {
   type: "assign";
-  variable: string;
+  target: VariableReferenceNode;
   expression: string;
   line: number;
 }

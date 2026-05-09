@@ -1,10 +1,17 @@
 import type { RuntimeValue } from "../../../domain/models/RuntimeValue";
 
-type TokenType = "number" | "string" | "identifier" | "operator" | "paren";
+type TokenType =
+  | "number"
+  | "string"
+  | "identifier"
+  | "array_access"
+  | "operator"
+  | "paren";
 
 interface Token {
   type: TokenType;
   value: string;
+  indexExpression?: string;
 }
 
 const OPERATOR_PRECEDENCE: Record<string, number> = {
@@ -153,6 +160,25 @@ function tokenize(expression: string): Token[] {
         continue;
       }
 
+      let lookahead = index;
+
+      while (lookahead < expression.length && /\s/.test(expression[lookahead])) {
+        lookahead++;
+      }
+
+      if (expression[lookahead] === "[") {
+        const { content, endIndex } = readBracketContent(expression, lookahead);
+
+        tokens.push({
+          type: "array_access",
+          value,
+          indexExpression: content.trim(),
+        });
+
+        index = endIndex + 1;
+        continue;
+      }
+
       tokens.push({
         type: "identifier",
         value,
@@ -165,6 +191,46 @@ function tokenize(expression: string): Token[] {
   }
 
   return tokens;
+}
+
+function readBracketContent(
+  expression: string,
+  startIndex: number
+): { content: string; endIndex: number } {
+  let depth = 0;
+  let content = "";
+
+  for (let index = startIndex; index < expression.length; index++) {
+    const char = expression[index];
+
+    if (char === "[") {
+      depth++;
+
+      if (depth > 1) {
+        content += char;
+      }
+
+      continue;
+    }
+
+    if (char === "]") {
+      depth--;
+
+      if (depth === 0) {
+        return {
+          content,
+          endIndex: index,
+        };
+      }
+
+      content += char;
+      continue;
+    }
+
+    content += char;
+  }
+
+  throw new Error(`Corchetes desbalanceados en acceso a arreglo.`);
 }
 
 function isStartOfNegativeNumber(
@@ -199,7 +265,8 @@ function toRpn(tokens: Token[]): Token[] {
     if (
       token.type === "number" ||
       token.type === "string" ||
-      token.type === "identifier"
+      token.type === "identifier" ||
+      token.type === "array_access"
     ) {
       output.push(token);
       continue;
@@ -239,8 +306,10 @@ function toRpn(tokens: Token[]): Token[] {
     if (token.type === "paren" && token.value === ")") {
       while (
         operators.length > 0 &&
-        !(operators[operators.length - 1].type === "paren" &&
-          operators[operators.length - 1].value === "(")
+        !(
+          operators[operators.length - 1].type === "paren" &&
+          operators[operators.length - 1].value === "("
+        )
       ) {
         output.push(operators.pop()!);
       }
@@ -306,7 +375,70 @@ function evaluateRpn(
         );
       }
 
-      stack.push(variables.get(normalized)!);
+      const value = variables.get(normalized)!;
+
+      if (Array.isArray(value)) {
+        throw new Error(
+          formatLineError(
+            `La variable "${token.value}" es un arreglo. Debes acceder con índice.`,
+            lineNumber
+          )
+        );
+      }
+
+      stack.push(value);
+      continue;
+    }
+
+    if (token.type === "array_access") {
+      const normalized = normalizeWord(token.value);
+
+      if (!variables.has(normalized)) {
+        throw new Error(
+          formatLineError(
+            `El arreglo "${token.value}" no existe.`,
+            lineNumber
+          )
+        );
+      }
+
+      const arrayValue = variables.get(normalized)!;
+
+      if (!Array.isArray(arrayValue)) {
+        throw new Error(
+          formatLineError(
+            `"${token.value}" no es un arreglo.`,
+            lineNumber
+          )
+        );
+      }
+
+      const nestedEvaluator = new ExpressionEvaluator();
+      const indexValue = nestedEvaluator.evaluate(
+        token.indexExpression ?? "",
+        variables,
+        lineNumber
+      );
+
+      if (typeof indexValue !== "number" || !Number.isInteger(indexValue)) {
+        throw new Error(
+          formatLineError(
+            `El índice del arreglo "${token.value}" debe ser un entero.`,
+            lineNumber
+          )
+        );
+      }
+
+      if (indexValue < 1 || indexValue >= arrayValue.length) {
+        throw new Error(
+          formatLineError(
+            `Índice fuera de rango en "${token.value}[${indexValue}]".`,
+            lineNumber
+          )
+        );
+      }
+
+      stack.push(arrayValue[indexValue]);
       continue;
     }
 
@@ -322,7 +454,10 @@ function evaluateRpn(
 
         if (typeof operand !== "boolean") {
           throw new Error(
-            formatLineError(`El operador "No" requiere un valor booleano.`, lineNumber)
+            formatLineError(
+              `El operador "No" requiere un valor booleano.`,
+              lineNumber
+            )
           );
         }
 
@@ -345,7 +480,10 @@ function evaluateRpn(
 
   if (stack.length !== 1) {
     throw new Error(
-      formatLineError(`No se pudo resolver correctamente la expresión.`, lineNumber)
+      formatLineError(
+        `No se pudo resolver correctamente la expresión.`,
+        lineNumber
+      )
     );
   }
 
@@ -377,7 +515,9 @@ function applyOperator(
     case "/":
       validateNumbers(left, right, lineNumber);
       if ((right as number) === 0) {
-        throw new Error(formatLineError(`No se puede dividir entre cero.`, lineNumber));
+        throw new Error(
+          formatLineError(`No se puede dividir entre cero.`, lineNumber)
+        );
       }
       return (left as number) / (right as number);
 
@@ -441,7 +581,10 @@ function validateBooleans(
 ): void {
   if (typeof left !== "boolean" || typeof right !== "boolean") {
     throw new Error(
-      formatLineError(`La operación lógica requiere valores booleanos.`, lineNumber)
+      formatLineError(
+        `La operación lógica requiere valores booleanos.`,
+        lineNumber
+      )
     );
   }
 }
@@ -457,6 +600,9 @@ function normalizeWord(value: string): string {
 function renderValue(value: RuntimeValue): string {
   if (value === null) return "Nulo";
   if (typeof value === "boolean") return value ? "Verdadero" : "Falso";
+  if (Array.isArray(value)) {
+    return `[${value.slice(1).map(renderValue).join(", ")}]`;
+  }
   return String(value);
 }
 
