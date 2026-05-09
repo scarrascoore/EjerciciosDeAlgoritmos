@@ -1,11 +1,13 @@
 import type {
   AssignmentStatementNode,
   DefineStatementNode,
+  DimensionStatementNode,
   ForStatementNode,
   IfStatementNode,
   ProgramNode,
   ReadStatementNode,
   StatementNode,
+  VariableReferenceNode,
   WhileStatementNode,
   WriteStatementNode,
 } from "../../../domain/ast/AstNodes";
@@ -79,6 +81,12 @@ export class PseintLineParser {
 
       if (/^Definir\s+/i.test(trimmed)) {
         statements.push(this.parseDefine(trimmed, this.current + 1));
+        this.current++;
+        continue;
+      }
+
+      if (/^Dimension\s+/i.test(trimmed)) {
+        statements.push(this.parseDimension(trimmed, this.current + 1));
         this.current++;
         continue;
       }
@@ -177,6 +185,26 @@ export class PseintLineParser {
       type: "define",
       variables,
       variableType,
+      line: lineNumber,
+    };
+  }
+
+  private parseDimension(
+    line: string,
+    lineNumber: number
+  ): DimensionStatementNode {
+    const match = line.match(/^Dimension\s+([a-zA-Z_]\w*)\s*\[\s*(.+)\s*\]$/i);
+
+    if (!match) {
+      throw new Error(
+        `[Línea ${lineNumber}] Sintaxis inválida en Dimension. Ejemplo: Dimension notas[5]`
+      );
+    }
+
+    return {
+      type: "dimension",
+      variable: match[1].trim(),
+      sizeExpression: match[2].trim(),
       line: lineNumber,
     };
   }
@@ -336,7 +364,7 @@ export class PseintLineParser {
   }
 
   private parseRead(line: string, lineNumber: number): ReadStatementNode {
-    const match = line.match(/^Leer\s+([a-zA-Z_]\w*)$/i);
+    const match = line.match(/^Leer\s+(.+)$/i);
 
     if (!match) {
       throw new Error(
@@ -346,7 +374,7 @@ export class PseintLineParser {
 
     return {
       type: "read",
-      variable: match[1],
+      target: this.parseVariableReference(match[1].trim(), lineNumber),
       line: lineNumber,
     };
   }
@@ -355,7 +383,7 @@ export class PseintLineParser {
     line: string,
     lineNumber: number
   ): AssignmentStatementNode {
-    const match = line.match(/^([a-zA-Z_]\w*)\s*<-\s*(.+)$/i);
+    const match = line.match(/^(.+?)\s*<-\s*(.+)$/i);
 
     if (!match) {
       throw new Error(
@@ -365,10 +393,37 @@ export class PseintLineParser {
 
     return {
       type: "assign",
-      variable: match[1],
+      target: this.parseVariableReference(match[1].trim(), lineNumber),
       expression: match[2].trim(),
       line: lineNumber,
     };
+  }
+
+  private parseVariableReference(
+    raw: string,
+    lineNumber: number
+  ): VariableReferenceNode {
+    const trimmed = raw.trim();
+
+    const indexedMatch = trimmed.match(/^([a-zA-Z_]\w*)\s*\[\s*(.+)\s*\]$/);
+
+    if (indexedMatch) {
+      return {
+        name: indexedMatch[1].trim(),
+        indexExpression: indexedMatch[2].trim(),
+      };
+    }
+
+    if (/^[a-zA-Z_]\w*$/.test(trimmed)) {
+      return {
+        name: trimmed,
+        indexExpression: null,
+      };
+    }
+
+    throw new Error(
+      `[Línea ${lineNumber}] Referencia de variable inválida: "${raw}".`
+    );
   }
 
   private skipIgnorableLines(): void {
@@ -403,6 +458,7 @@ function splitArguments(input: string): string[] {
   let current = "";
   let inString = false;
   let parenthesisDepth = 0;
+  let bracketDepth = 0;
 
   for (let i = 0; i < input.length; i++) {
     const char = input[i];
@@ -425,7 +481,24 @@ function splitArguments(input: string): string[] {
       continue;
     }
 
-    if (!inString && parenthesisDepth === 0 && char === ",") {
+    if (!inString && char === "[") {
+      bracketDepth++;
+      current += char;
+      continue;
+    }
+
+    if (!inString && char === "]") {
+      bracketDepth--;
+      current += char;
+      continue;
+    }
+
+    if (
+      !inString &&
+      parenthesisDepth === 0 &&
+      bracketDepth === 0 &&
+      char === ","
+    ) {
       if (current.trim()) {
         result.push(current.trim());
       }
