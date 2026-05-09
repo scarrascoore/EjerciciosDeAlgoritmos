@@ -1,1 +1,2 @@
-export type RuntimeValue = string | number | boolean | null;
+export type ScalarRuntimeValue = string | number | boolean | null;
+export type RuntimeValue = ScalarRuntimeValue | ScalarRuntimeValue[];
