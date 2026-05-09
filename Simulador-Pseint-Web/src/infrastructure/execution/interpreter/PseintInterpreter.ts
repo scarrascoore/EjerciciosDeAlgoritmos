@@ -1,6 +1,7 @@
 import type { ProgramIOPort } from "../../../application/ports/ProgramIOPort";
 import type {
   AssignmentStatementNode,
+  ForStatementNode,
   IfStatementNode,
   ProgramNode,
   ReadStatementNode,
@@ -52,6 +53,10 @@ export class PseintInterpreter {
 
       case "while":
         await this.executeWhile(statement, variables, io);
+        return;
+
+      case "for":
+        await this.executeFor(statement, variables, io);
         return;
     }
   }
@@ -158,6 +163,92 @@ export class PseintInterpreter {
       }
     }
   }
+
+  private async executeFor(
+    statement: ForStatementNode,
+    variables: Map<string, RuntimeValue>,
+    io: ProgramIOPort
+  ): Promise<void> {
+    const startValue = this.evaluator.evaluate(
+      statement.startExpression,
+      variables,
+      statement.line
+    );
+
+    const endValue = this.evaluator.evaluate(
+      statement.endExpression,
+      variables,
+      statement.line
+    );
+
+    const stepValue = statement.stepExpression
+      ? this.evaluator.evaluate(statement.stepExpression, variables, statement.line)
+      : 1;
+
+    const startNumber = ensureNumber(
+      startValue,
+      statement.line,
+      "El valor inicial del Para debe ser numérico."
+    );
+
+    const endNumber = ensureNumber(
+      endValue,
+      statement.line,
+      "El valor final del Para debe ser numérico."
+    );
+
+    const stepNumber = ensureNumber(
+      stepValue,
+      statement.line,
+      "El paso del Para debe ser numérico."
+    );
+
+    if (stepNumber === 0) {
+      throw new Error(
+        `[Línea ${statement.line}] El paso del Para no puede ser cero.`
+      );
+    }
+
+    const variableName = normalizeName(statement.variable);
+    let iterations = 0;
+
+    variables.set(variableName, startNumber);
+
+    while (true) {
+      const currentValue = ensureNumber(
+        variables.get(variableName),
+        statement.line,
+        `La variable de control "${statement.variable}" debe mantenerse numérica.`
+      );
+
+      const shouldContinue =
+        stepNumber > 0 ? currentValue <= endNumber : currentValue >= endNumber;
+
+      if (!shouldContinue) {
+        break;
+      }
+
+      iterations++;
+
+      if (iterations > MAX_LOOP_ITERATIONS) {
+        throw new Error(
+          `[Línea ${statement.line}] Se superó el límite de ${MAX_LOOP_ITERATIONS} iteraciones en el Para. Posible bucle infinito.`
+        );
+      }
+
+      for (const nestedStatement of statement.body) {
+        await this.executeStatement(nestedStatement, variables, io);
+      }
+
+      const valueAfterBody = ensureNumber(
+        variables.get(variableName),
+        statement.line,
+        `La variable de control "${statement.variable}" debe mantenerse numérica.`
+      );
+
+      variables.set(variableName, valueAfterBody + stepNumber);
+    }
+  }
 }
 
 function inferValue(raw: string): RuntimeValue {
@@ -190,4 +281,16 @@ function renderValue(value: RuntimeValue): string {
   if (value === null) return "Nulo";
   if (typeof value === "boolean") return value ? "Verdadero" : "Falso";
   return String(value);
+}
+
+function ensureNumber(
+  value: RuntimeValue | undefined,
+  line: number,
+  message: string
+): number {
+  if (typeof value !== "number") {
+    throw new Error(`[Línea ${line}] ${message}`);
+  }
+
+  return value;
 }
