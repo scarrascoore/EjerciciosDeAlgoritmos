@@ -28,23 +28,28 @@ export class PseintLineParser {
     }
 
     const firstLine = this.currentLine().trim();
-    const algorithmMatch = firstLine.match(/^Algoritmo\s+(.+)$/i);
+    const startMatch = firstLine.match(/^(Algoritmo|Proceso)\s+(.+)$/i);
 
-    if (!algorithmMatch) {
+    if (!startMatch) {
       throw new Error(
-        `[Línea ${this.current + 1}] El programa debe iniciar con "Algoritmo NombrePrograma".`
+        `[Línea ${this.current + 1}] El programa debe iniciar con "Algoritmo Nombre" o "Proceso Nombre".`
       );
     }
 
-    const programName = algorithmMatch[1].trim();
+    const programName = startMatch[2].trim();
     this.current++;
 
-    const body = this.parseBlock(["FinAlgoritmo"]);
+    const body = this.parseBlock(["FinAlgoritmo", "FinProceso"]);
 
     this.skipIgnorableLines();
 
-    if (this.isAtEnd() || !/^FinAlgoritmo$/i.test(this.currentLine().trim())) {
-      throw new Error(`No se encontró la instrucción final "FinAlgoritmo".`);
+    if (
+      this.isAtEnd() ||
+      !/^(FinAlgoritmo|FinProceso)$/i.test(this.currentLine().trim())
+    ) {
+      throw new Error(
+        `No se encontró la instrucción final "FinAlgoritmo" o "FinProceso".`
+      );
     }
 
     this.current++;
@@ -52,7 +57,7 @@ export class PseintLineParser {
 
     if (!this.isAtEnd()) {
       throw new Error(
-        `[Línea ${this.current + 1}] Hay contenido no esperado después de "FinAlgoritmo".`
+        `[Línea ${this.current + 1}] Hay contenido no esperado después del fin del programa.`
       );
     }
 
@@ -106,7 +111,7 @@ export class PseintLineParser {
         continue;
       }
 
-      if (/^Escribir\s+/i.test(trimmed)) {
+      if (/^(Escribir|Imprimir)\s+/i.test(trimmed)) {
         statements.push(this.parseWrite(trimmed, this.current + 1));
         this.current++;
         continue;
@@ -118,7 +123,7 @@ export class PseintLineParser {
         continue;
       }
 
-      if (trimmed.includes("<-")) {
+      if (trimmed.includes("<-") || trimmed.includes("=")) {
         statements.push(this.parseAssignment(trimmed, this.current + 1));
         this.current++;
         continue;
@@ -305,12 +310,12 @@ export class PseintLineParser {
     const line = this.currentLine().trim();
 
     const match = line.match(
-      /^Para\s+([a-zA-Z_]\w*)\s*<-\s*(.+?)\s+Hasta\s+(.+?)(?:\s+Con\s+Paso\s+(.+?))?\s+Hacer$/i
+      /^Para\s+([a-zA-Z_]\w*)\s*(?:<-|=)\s*(.+?)\s+Hasta\s+(.+?)(?:\s+Con\s+Paso\s+(.+?))?\s+Hacer$/i
     );
 
     if (!match) {
       throw new Error(
-        `[Línea ${lineNumber}] Sintaxis inválida en Para. Ejemplo: Para i <- 1 Hasta 10 Con Paso 1 Hacer`
+        `[Línea ${lineNumber}] Sintaxis inválida en Para. Ejemplo: Para i = 1 Hasta 10 Con Paso 1 Hacer`
       );
     }
 
@@ -342,17 +347,19 @@ export class PseintLineParser {
   }
 
   private parseWrite(line: string, lineNumber: number): WriteStatementNode {
-    const match = line.match(/^Escribir\s+(.+)$/i);
+    const match = line.match(/^(Escribir|Imprimir)\s+(.+)$/i);
 
     if (!match) {
-      throw new Error(`[Línea ${lineNumber}] Sintaxis inválida en Escribir.`);
+      throw new Error(
+        `[Línea ${lineNumber}] Sintaxis inválida en Escribir/Imprimir.`
+      );
     }
 
-    const args = splitArguments(match[1]);
+    const args = splitWriteArguments(match[2]);
 
     if (args.length === 0) {
       throw new Error(
-        `[Línea ${lineNumber}] Escribir debe contener al menos un argumento.`
+        `[Línea ${lineNumber}] Escribir/Imprimir debe contener al menos un argumento.`
       );
     }
 
@@ -367,9 +374,7 @@ export class PseintLineParser {
     const match = line.match(/^Leer\s+(.+)$/i);
 
     if (!match) {
-      throw new Error(
-        `[Línea ${lineNumber}] Sintaxis inválida en Leer.`
-      );
+      throw new Error(`[Línea ${lineNumber}] Sintaxis inválida en Leer.`);
     }
 
     return {
@@ -383,7 +388,7 @@ export class PseintLineParser {
     line: string,
     lineNumber: number
   ): AssignmentStatementNode {
-    const match = line.match(/^(.+?)\s*<-\s*(.+)$/i);
+    const match = line.match(/^(.+?)\s*(?:<-|=)\s*(.+)$/i);
 
     if (!match) {
       throw new Error(
@@ -427,9 +432,7 @@ export class PseintLineParser {
 }
 
 function parseTarget(rawTarget: string, lineNumber: number): TargetNode {
-  const arrayMatch = rawTarget.match(
-    /^([a-zA-Z_]\w*)\s*\[\s*(.+)\s*\]$/i
-  );
+  const arrayMatch = rawTarget.match(/^([a-zA-Z_]\w*)\s*\[\s*(.+)\s*\]$/i);
 
   if (arrayMatch) {
     return {
@@ -451,7 +454,7 @@ function parseTarget(rawTarget: string, lineNumber: number): TargetNode {
   };
 }
 
-function splitArguments(input: string): string[] {
+function splitWriteArguments(input: string): string[] {
   const result: string[] = [];
   let current = "";
   let inString = false;
@@ -462,40 +465,55 @@ function splitArguments(input: string): string[] {
     const char = input[i];
 
     if (char === '"') {
-      inString = !inString;
+      if (inString) {
+        current += char;
+        result.push(current);
+        current = "";
+        inString = false;
+      } else {
+        if (current.trim()) {
+          result.push(current.trim());
+          current = "";
+        }
+        current = '"';
+        inString = true;
+      }
+      continue;
+    }
+
+    if (inString) {
       current += char;
       continue;
     }
 
-    if (!inString && char === "(") {
+    if (char === "(") {
       parenthesisDepth++;
       current += char;
       continue;
     }
 
-    if (!inString && char === ")") {
+    if (char === ")") {
       parenthesisDepth--;
       current += char;
       continue;
     }
 
-    if (!inString && char === "[") {
+    if (char === "[") {
       bracketDepth++;
       current += char;
       continue;
     }
 
-    if (!inString && char === "]") {
+    if (char === "]") {
       bracketDepth--;
       current += char;
       continue;
     }
 
     if (
-      !inString &&
+      char === "," &&
       parenthesisDepth === 0 &&
-      bracketDepth === 0 &&
-      char === ","
+      bracketDepth === 0
     ) {
       if (current.trim()) {
         result.push(current.trim());
@@ -505,6 +523,10 @@ function splitArguments(input: string): string[] {
     }
 
     current += char;
+  }
+
+  if (inString) {
+    throw new Error(`Cadena sin cerrar en Escribir/Imprimir.`);
   }
 
   if (current.trim()) {
