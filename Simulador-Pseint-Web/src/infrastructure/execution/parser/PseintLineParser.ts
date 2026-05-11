@@ -7,7 +7,7 @@ import type {
   ProgramNode,
   ReadStatementNode,
   StatementNode,
-  VariableReferenceNode,
+  TargetNode,
   WhileStatementNode,
   WriteStatementNode,
 } from "../../../domain/ast/AstNodes";
@@ -203,7 +203,7 @@ export class PseintLineParser {
 
     return {
       type: "dimension",
-      variable: match[1].trim(),
+      name: match[1].trim(),
       sizeExpression: match[2].trim(),
       line: lineNumber,
     };
@@ -368,13 +368,13 @@ export class PseintLineParser {
 
     if (!match) {
       throw new Error(
-        `[Línea ${lineNumber}] Sintaxis inválida en Leer. Ejemplo: Leer nombre`
+        `[Línea ${lineNumber}] Sintaxis inválida en Leer.`
       );
     }
 
     return {
       type: "read",
-      target: this.parseVariableReference(match[1].trim(), lineNumber),
+      target: parseTarget(match[1].trim(), lineNumber),
       line: lineNumber,
     };
   }
@@ -387,43 +387,16 @@ export class PseintLineParser {
 
     if (!match) {
       throw new Error(
-        `[Línea ${lineNumber}] Sintaxis inválida en asignación. Ejemplo: x <- 10`
+        `[Línea ${lineNumber}] Sintaxis inválida en asignación.`
       );
     }
 
     return {
       type: "assign",
-      target: this.parseVariableReference(match[1].trim(), lineNumber),
+      target: parseTarget(match[1].trim(), lineNumber),
       expression: match[2].trim(),
       line: lineNumber,
     };
-  }
-
-  private parseVariableReference(
-    raw: string,
-    lineNumber: number
-  ): VariableReferenceNode {
-    const trimmed = raw.trim();
-
-    const indexedMatch = trimmed.match(/^([a-zA-Z_]\w*)\s*\[\s*(.+)\s*\]$/);
-
-    if (indexedMatch) {
-      return {
-        name: indexedMatch[1].trim(),
-        indexExpression: indexedMatch[2].trim(),
-      };
-    }
-
-    if (/^[a-zA-Z_]\w*$/.test(trimmed)) {
-      return {
-        name: trimmed,
-        indexExpression: null,
-      };
-    }
-
-    throw new Error(
-      `[Línea ${lineNumber}] Referencia de variable inválida: "${raw}".`
-    );
   }
 
   private skipIgnorableLines(): void {
@@ -451,6 +424,31 @@ export class PseintLineParser {
   private isAtEnd(): boolean {
     return this.current >= this.lines.length;
   }
+}
+
+function parseTarget(rawTarget: string, lineNumber: number): TargetNode {
+  const arrayMatch = rawTarget.match(
+    /^([a-zA-Z_]\w*)\s*\[\s*(.+)\s*\]$/i
+  );
+
+  if (arrayMatch) {
+    return {
+      kind: "array_element",
+      name: arrayMatch[1].trim(),
+      indexExpression: arrayMatch[2].trim(),
+    };
+  }
+
+  if (!/^[a-zA-Z_]\w*$/.test(rawTarget)) {
+    throw new Error(
+      `[Línea ${lineNumber}] Destino inválido: "${rawTarget}".`
+    );
+  }
+
+  return {
+    kind: "variable",
+    name: rawTarget.trim(),
+  };
 }
 
 function splitArguments(input: string): string[] {
