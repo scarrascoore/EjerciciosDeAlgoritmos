@@ -37,11 +37,12 @@ export class ExpressionEvaluator {
   evaluate(
     expression: string,
     variables: Map<string, RuntimeValue>,
+    arrays: Map<string, RuntimeValue[]>,
     lineNumber?: number
   ): RuntimeValue {
     const tokens = tokenize(expression);
     const rpn = toRpn(tokens);
-    return evaluateRpn(rpn, variables, lineNumber);
+    return evaluateRpn(rpn, variables, arrays, lineNumber);
   }
 }
 
@@ -143,6 +144,24 @@ function tokenize(expression: string): Token[] {
         index++;
       }
 
+      let lookAhead = index;
+      while (lookAhead < expression.length && /\s/.test(expression[lookAhead])) {
+        lookAhead++;
+      }
+
+      if (expression[lookAhead] === "[") {
+        const { content, nextIndex } = readBracketContent(expression, lookAhead);
+
+        tokens.push({
+          type: "array_access",
+          value,
+          indexExpression: content.trim(),
+        });
+
+        index = nextIndex;
+        continue;
+      }
+
       const normalized = normalizeWord(value);
 
       if (normalized === "y") {
@@ -157,25 +176,6 @@ function tokenize(expression: string): Token[] {
 
       if (normalized === "no") {
         tokens.push({ type: "operator", value: "NO" });
-        continue;
-      }
-
-      let lookahead = index;
-
-      while (lookahead < expression.length && /\s/.test(expression[lookahead])) {
-        lookahead++;
-      }
-
-      if (expression[lookahead] === "[") {
-        const { content, endIndex } = readBracketContent(expression, lookahead);
-
-        tokens.push({
-          type: "array_access",
-          value,
-          indexExpression: content.trim(),
-        });
-
-        index = endIndex + 1;
         continue;
       }
 
@@ -196,11 +196,12 @@ function tokenize(expression: string): Token[] {
 function readBracketContent(
   expression: string,
   startIndex: number
-): { content: string; endIndex: number } {
+): { content: string; nextIndex: number } {
+  let index = startIndex;
   let depth = 0;
   let content = "";
 
-  for (let index = startIndex; index < expression.length; index++) {
+  while (index < expression.length) {
     const char = expression[index];
 
     if (char === "[") {
@@ -210,6 +211,7 @@ function readBracketContent(
         content += char;
       }
 
+      index++;
       continue;
     }
 
@@ -219,15 +221,17 @@ function readBracketContent(
       if (depth === 0) {
         return {
           content,
-          endIndex: index,
+          nextIndex: index + 1,
         };
       }
 
       content += char;
+      index++;
       continue;
     }
 
     content += char;
+    index++;
   }
 
   throw new Error(`Corchetes desbalanceados en acceso a arreglo.`);
@@ -338,6 +342,7 @@ function toRpn(tokens: Token[]): Token[] {
 function evaluateRpn(
   tokens: Token[],
   variables: Map<string, RuntimeValue>,
+  arrays: Map<string, RuntimeValue[]>,
   lineNumber?: number
 ): RuntimeValue {
   const stack: RuntimeValue[] = [];
@@ -366,6 +371,15 @@ function evaluateRpn(
         continue;
       }
 
+      if (arrays.has(normalized)) {
+        throw new Error(
+          formatLineError(
+            `El arreglo "${token.value}" debe accederse con índice.`,
+            lineNumber
+          )
+        );
+      }
+
       if (!variables.has(normalized)) {
         throw new Error(
           formatLineError(
@@ -375,48 +389,27 @@ function evaluateRpn(
         );
       }
 
-      const value = variables.get(normalized)!;
-
-      if (Array.isArray(value)) {
-        throw new Error(
-          formatLineError(
-            `La variable "${token.value}" es un arreglo. Debes acceder con índice.`,
-            lineNumber
-          )
-        );
-      }
-
-      stack.push(value);
+      stack.push(variables.get(normalized)!);
       continue;
     }
 
     if (token.type === "array_access") {
-      const normalized = normalizeWord(token.value);
+      const arrayName = normalizeWord(token.value);
+      const arrayValues = arrays.get(arrayName);
 
-      if (!variables.has(normalized)) {
+      if (!arrayValues) {
         throw new Error(
           formatLineError(
-            `El arreglo "${token.value}" no existe.`,
+            `El arreglo "${token.value}" no ha sido dimensionado.`,
             lineNumber
           )
         );
       }
 
-      const arrayValue = variables.get(normalized)!;
-
-      if (!Array.isArray(arrayValue)) {
-        throw new Error(
-          formatLineError(
-            `"${token.value}" no es un arreglo.`,
-            lineNumber
-          )
-        );
-      }
-
-      const nestedEvaluator = new ExpressionEvaluator();
-      const indexValue = nestedEvaluator.evaluate(
+      const indexValue = new ExpressionEvaluator().evaluate(
         token.indexExpression ?? "",
         variables,
+        arrays,
         lineNumber
       );
 
@@ -429,16 +422,16 @@ function evaluateRpn(
         );
       }
 
-      if (indexValue < 1 || indexValue >= arrayValue.length) {
+      if (indexValue < 1 || indexValue > arrayValues.length) {
         throw new Error(
           formatLineError(
-            `Índice fuera de rango en "${token.value}[${indexValue}]".`,
+            `Índice fuera de rango en "${token.value}[${indexValue}]". Rango válido: 1..${arrayValues.length}.`,
             lineNumber
           )
         );
       }
 
-      stack.push(arrayValue[indexValue]);
+      stack.push(arrayValues[indexValue - 1]);
       continue;
     }
 
@@ -600,9 +593,6 @@ function normalizeWord(value: string): string {
 function renderValue(value: RuntimeValue): string {
   if (value === null) return "Nulo";
   if (typeof value === "boolean") return value ? "Verdadero" : "Falso";
-  if (Array.isArray(value)) {
-    return `[${value.slice(1).map(renderValue).join(", ")}]`;
-  }
   return String(value);
 }
 
