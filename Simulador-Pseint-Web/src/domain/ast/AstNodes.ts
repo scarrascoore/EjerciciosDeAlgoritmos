@@ -16,11 +16,6 @@ export type StatementNode =
   | WhileStatementNode
   | ForStatementNode;
 
-export interface VariableReferenceNode {
-  name: string;
-  indexExpression: string | null;
-}
-
 export interface DefineStatementNode {
   type: "define";
   variables: string[];
@@ -30,9 +25,22 @@ export interface DefineStatementNode {
 
 export interface DimensionStatementNode {
   type: "dimension";
-  variable: string;
+  name: string;
   sizeExpression: string;
   line: number;
+}
+
+export type TargetNode = VariableTargetNode | ArrayElementTargetNode;
+
+export interface VariableTargetNode {
+  kind: "variable";
+  name: string;
+}
+
+export interface ArrayElementTargetNode {
+  kind: "array_element";
+  name: string;
+  indexExpression: string;
 }
 
 export interface WriteStatementNode {
@@ -43,13 +51,13 @@ export interface WriteStatementNode {
 
 export interface ReadStatementNode {
   type: "read";
-  target: VariableReferenceNode;
+  target: TargetNode;
   line: number;
 }
 
 export interface AssignmentStatementNode {
   type: "assign";
-  target: VariableReferenceNode;
+  target: TargetNode;
   expression: string;
   line: number;
 }
