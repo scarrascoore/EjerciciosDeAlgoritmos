@@ -4,14 +4,14 @@ type TokenType =
   | "number"
   | "string"
   | "identifier"
-  | "array_access"
+  | "indexed_access"
   | "operator"
   | "paren";
 
 interface Token {
   type: TokenType;
   value: string;
-  indexExpression?: string;
+  indicesExpressions?: string[];
 }
 
 const OPERATOR_PRECEDENCE: Record<string, number> = {
@@ -38,11 +38,12 @@ export class ExpressionEvaluator {
     expression: string,
     variables: Map<string, RuntimeValue>,
     arrays: Map<string, RuntimeValue[]>,
+    matrices: Map<string, RuntimeValue[][]>,
     lineNumber?: number
   ): RuntimeValue {
     const tokens = tokenize(expression);
     const rpn = toRpn(tokens);
-    return evaluateRpn(rpn, variables, arrays, lineNumber);
+    return evaluateRpn(rpn, variables, arrays, matrices, lineNumber);
   }
 }
 
@@ -151,11 +152,18 @@ function tokenize(expression: string): Token[] {
 
       if (expression[lookAhead] === "[") {
         const { content, nextIndex } = readBracketContent(expression, lookAhead);
+        const indicesExpressions = splitTopLevelArguments(content);
+
+        if (indicesExpressions.length < 1 || indicesExpressions.length > 2) {
+          throw new Error(
+            `Solo se soportan accesos indexados de una o dos dimensiones.`
+          );
+        }
 
         tokens.push({
-          type: "array_access",
+          type: "indexed_access",
           value,
-          indexExpression: content.trim(),
+          indicesExpressions: indicesExpressions.map((item) => item.trim()),
         });
 
         index = nextIndex;
@@ -206,18 +214,15 @@ function readBracketContent(
 
     if (char === "[") {
       depth++;
-
       if (depth > 1) {
         content += char;
       }
-
       index++;
       continue;
     }
 
     if (char === "]") {
       depth--;
-
       if (depth === 0) {
         return {
           content,
@@ -234,7 +239,70 @@ function readBracketContent(
     index++;
   }
 
-  throw new Error(`Corchetes desbalanceados en acceso a arreglo.`);
+  throw new Error(`Corchetes desbalanceados en acceso indexado.`);
+}
+
+function splitTopLevelArguments(input: string): string[] {
+  const result: string[] = [];
+  let current = "";
+  let inString = false;
+  let parenthesisDepth = 0;
+  let bracketDepth = 0;
+
+  for (let i = 0; i < input.length; i++) {
+    const char = input[i];
+
+    if (char === '"') {
+      inString = !inString;
+      current += char;
+      continue;
+    }
+
+    if (!inString && char === "(") {
+      parenthesisDepth++;
+      current += char;
+      continue;
+    }
+
+    if (!inString && char === ")") {
+      parenthesisDepth--;
+      current += char;
+      continue;
+    }
+
+    if (!inString && char === "[") {
+      bracketDepth++;
+      current += char;
+      continue;
+    }
+
+    if (!inString && char === "]") {
+      bracketDepth--;
+      current += char;
+      continue;
+    }
+
+    if (
+      !inString &&
+      parenthesisDepth === 0 &&
+      bracketDepth === 0 &&
+      char === ","
+    ) {
+      if (current.trim()) {
+        result.push(current.trim());
+      }
+      current = "";
+      continue;
+    }
+
+    current += char;
+  }
+
+  if (current.trim()) {
+    result.push(current.trim());
+  }
+
+  return result;
 }
 
 function isStartOfNegativeNumber(
@@ -270,7 +338,7 @@ function toRpn(tokens: Token[]): Token[] {
       token.type === "number" ||
       token.type === "string" ||
       token.type === "identifier" ||
-      token.type === "array_access"
+      token.type === "indexed_access"
     ) {
       output.push(token);
       continue;
@@ -343,6 +411,7 @@ function evaluateRpn(
   tokens: Token[],
   variables: Map<string, RuntimeValue>,
   arrays: Map<string, RuntimeValue[]>,
+  matrices: Map<string, RuntimeValue[][]>,
   lineNumber?: number
 ): RuntimeValue {
   const stack: RuntimeValue[] = [];
@@ -371,10 +440,10 @@ function evaluateRpn(
         continue;
       }
 
-      if (arrays.has(normalized)) {
+      if (arrays.has(normalized) || matrices.has(normalized)) {
         throw new Error(
           formatLineError(
-            `El arreglo "${token.value}" debe accederse con índice.`,
+            `La estructura "${token.value}" debe accederse con índices.`,
             lineNumber
           )
         );
@@ -393,46 +462,140 @@ function evaluateRpn(
       continue;
     }
 
-    if (token.type === "array_access") {
-      const arrayName = normalizeWord(token.value);
-      const arrayValues = arrays.get(arrayName);
+    if (token.type === "indexed_access") {
+      const structureName = normalizeWord(token.value);
+      const indexExpressions = token.indicesExpressions ?? [];
 
-      if (!arrayValues) {
-        throw new Error(
-          formatLineError(
-            `El arreglo "${token.value}" no ha sido dimensionado.`,
-            lineNumber
-          )
+      if (indexExpressions.length === 1) {
+        const arrayValues = arrays.get(structureName);
+
+        if (!arrayValues) {
+          if (matrices.has(structureName)) {
+            throw new Error(
+              formatLineError(
+                `La matriz "${token.value}" requiere dos índices.`,
+                lineNumber
+              )
+            );
+          }
+
+          throw new Error(
+            formatLineError(
+              `El arreglo "${token.value}" no ha sido dimensionado.`,
+              lineNumber
+            )
+          );
+        }
+
+        const indexValue = new ExpressionEvaluator().evaluate(
+          indexExpressions[0],
+          variables,
+          arrays,
+          matrices,
+          lineNumber
         );
+
+        if (typeof indexValue !== "number" || !Number.isInteger(indexValue)) {
+          throw new Error(
+            formatLineError(
+              `El índice del arreglo "${token.value}" debe ser un entero.`,
+              lineNumber
+            )
+          );
+        }
+
+        if (indexValue < 1 || indexValue > arrayValues.length) {
+          throw new Error(
+            formatLineError(
+              `Índice fuera de rango en "${token.value}[${indexValue}]". Rango válido: 1..${arrayValues.length}.`,
+              lineNumber
+            )
+          );
+        }
+
+        stack.push(arrayValues[indexValue - 1]);
+        continue;
       }
 
-      const indexValue = new ExpressionEvaluator().evaluate(
-        token.indexExpression ?? "",
-        variables,
-        arrays,
-        lineNumber
-      );
+      if (indexExpressions.length === 2) {
+        const matrixValues = matrices.get(structureName);
 
-      if (typeof indexValue !== "number" || !Number.isInteger(indexValue)) {
-        throw new Error(
-          formatLineError(
-            `El índice del arreglo "${token.value}" debe ser un entero.`,
-            lineNumber
-          )
+        if (!matrixValues) {
+          if (arrays.has(structureName)) {
+            throw new Error(
+              formatLineError(
+                `El arreglo "${token.value}" solo admite un índice.`,
+                lineNumber
+              )
+            );
+          }
+
+          throw new Error(
+            formatLineError(
+              `La matriz "${token.value}" no ha sido dimensionada.`,
+              lineNumber
+            )
+          );
+        }
+
+        const rowValue = new ExpressionEvaluator().evaluate(
+          indexExpressions[0],
+          variables,
+          arrays,
+          matrices,
+          lineNumber
         );
-      }
 
-      if (indexValue < 1 || indexValue > arrayValues.length) {
-        throw new Error(
-          formatLineError(
-            `Índice fuera de rango en "${token.value}[${indexValue}]". Rango válido: 1..${arrayValues.length}.`,
-            lineNumber
-          )
+        const columnValue = new ExpressionEvaluator().evaluate(
+          indexExpressions[1],
+          variables,
+          arrays,
+          matrices,
+          lineNumber
         );
-      }
 
-      stack.push(arrayValues[indexValue - 1]);
-      continue;
+        if (typeof rowValue !== "number" || !Number.isInteger(rowValue)) {
+          throw new Error(
+            formatLineError(
+              `La fila de la matriz "${token.value}" debe ser un entero.`,
+              lineNumber
+            )
+          );
+        }
+
+        if (typeof columnValue !== "number" || !Number.isInteger(columnValue)) {
+          throw new Error(
+            formatLineError(
+              `La columna de la matriz "${token.value}" debe ser un entero.`,
+              lineNumber
+            )
+          );
+        }
+
+        const totalRows = matrixValues.length;
+        const totalColumns = matrixValues[0]?.length ?? 0;
+
+        if (rowValue < 1 || rowValue > totalRows) {
+          throw new Error(
+            formatLineError(
+              `Fila fuera de rango en "${token.value}[${rowValue},${columnValue}]". Rango válido de fila: 1..${totalRows}.`,
+              lineNumber
+            )
+          );
+        }
+
+        if (columnValue < 1 || columnValue > totalColumns) {
+          throw new Error(
+            formatLineError(
+              `Columna fuera de rango en "${token.value}[${rowValue},${columnValue}]". Rango válido de columna: 1..${totalColumns}.`,
+              lineNumber
+            )
+          );
+        }
+
+        stack.push(matrixValues[rowValue - 1][columnValue - 1]);
+        continue;
+      }
     }
 
     if (token.type === "operator") {
