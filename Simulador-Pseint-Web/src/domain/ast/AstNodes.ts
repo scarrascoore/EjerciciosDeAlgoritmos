@@ -28,11 +28,14 @@ export interface DefineStatementNode {
 export interface DimensionStatementNode {
   type: "dimension";
   name: string;
-  sizeExpression: string;
+  sizeExpressions: string[];
   line: number;
 }
 
-export type TargetNode = VariableTargetNode | ArrayElementTargetNode;
+export type TargetNode =
+  | VariableTargetNode
+  | ArrayElementTargetNode
+  | MatrixElementTargetNode;
 
 export interface VariableTargetNode {
   kind: "variable";
@@ -43,6 +46,13 @@ export interface ArrayElementTargetNode {
   kind: "array_element";
   name: string;
   indexExpression: string;
+}
+
+export interface MatrixElementTargetNode {
+  kind: "matrix_element";
+  name: string;
+  rowExpression: string;
+  columnExpression: string;
 }
 
 export interface WriteStatementNode {
