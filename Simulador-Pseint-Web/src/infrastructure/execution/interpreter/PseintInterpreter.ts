@@ -6,6 +6,7 @@ import type {
   DimensionStatementNode,
   ForStatementNode,
   IfStatementNode,
+  MatrixElementTargetNode,
   ProgramNode,
   ReadStatementNode,
   RepeatUntilStatementNode,
@@ -34,6 +35,8 @@ export class PseintInterpreter {
     const declarations = new Map<string, VariableType>();
     const arrays = new Map<string, RuntimeValue[]>();
     const arrayDeclarations = new Map<string, VariableType | null>();
+    const matrices = new Map<string, RuntimeValue[][]>();
+    const matrixDeclarations = new Map<string, VariableType | null>();
 
     io.print(`Iniciando ejecución del algoritmo "${program.name}"...`, "system");
 
@@ -44,6 +47,8 @@ export class PseintInterpreter {
         declarations,
         arrays,
         arrayDeclarations,
+        matrices,
+        matrixDeclarations,
         io
       );
     }
@@ -57,19 +62,37 @@ export class PseintInterpreter {
     declarations: Map<string, VariableType>,
     arrays: Map<string, RuntimeValue[]>,
     arrayDeclarations: Map<string, VariableType | null>,
+    matrices: Map<string, RuntimeValue[][]>,
+    matrixDeclarations: Map<string, VariableType | null>,
     io: ProgramIOPort
   ): Promise<void> {
     switch (statement.type) {
       case "define":
-        this.executeDefine(statement, variables, declarations, arrays, arrayDeclarations);
+        this.executeDefine(
+          statement,
+          variables,
+          declarations,
+          arrays,
+          arrayDeclarations,
+          matrices,
+          matrixDeclarations
+        );
         return;
 
       case "dimension":
-        this.executeDimension(statement, variables, declarations, arrays, arrayDeclarations);
+        this.executeDimension(
+          statement,
+          variables,
+          declarations,
+          arrays,
+          arrayDeclarations,
+          matrices,
+          matrixDeclarations
+        );
         return;
 
       case "write":
-        this.executeWrite(statement, variables, arrays, io);
+        this.executeWrite(statement, variables, arrays, matrices, io);
         return;
 
       case "read":
@@ -79,6 +102,8 @@ export class PseintInterpreter {
           declarations,
           arrays,
           arrayDeclarations,
+          matrices,
+          matrixDeclarations,
           io
         );
         return;
@@ -89,7 +114,9 @@ export class PseintInterpreter {
           variables,
           declarations,
           arrays,
-          arrayDeclarations
+          arrayDeclarations,
+          matrices,
+          matrixDeclarations
         );
         return;
 
@@ -100,6 +127,8 @@ export class PseintInterpreter {
           declarations,
           arrays,
           arrayDeclarations,
+          matrices,
+          matrixDeclarations,
           io
         );
         return;
@@ -111,6 +140,8 @@ export class PseintInterpreter {
           declarations,
           arrays,
           arrayDeclarations,
+          matrices,
+          matrixDeclarations,
           io
         );
         return;
@@ -122,6 +153,8 @@ export class PseintInterpreter {
           declarations,
           arrays,
           arrayDeclarations,
+          matrices,
+          matrixDeclarations,
           io
         );
         return;
@@ -133,6 +166,8 @@ export class PseintInterpreter {
           declarations,
           arrays,
           arrayDeclarations,
+          matrices,
+          matrixDeclarations,
           io
         );
         return;
@@ -144,6 +179,8 @@ export class PseintInterpreter {
           declarations,
           arrays,
           arrayDeclarations,
+          matrices,
+          matrixDeclarations,
           io
         );
         return;
@@ -155,7 +192,9 @@ export class PseintInterpreter {
     variables: Map<string, RuntimeValue>,
     declarations: Map<string, VariableType>,
     arrays: Map<string, RuntimeValue[]>,
-    arrayDeclarations: Map<string, VariableType | null>
+    arrayDeclarations: Map<string, VariableType | null>,
+    matrices: Map<string, RuntimeValue[][]>,
+    matrixDeclarations: Map<string, VariableType | null>
   ): void {
     for (const variable of statement.variables) {
       const normalizedName = normalizeName(variable);
@@ -164,7 +203,9 @@ export class PseintInterpreter {
         declarations.has(normalizedName) ||
         variables.has(normalizedName) ||
         arrays.has(normalizedName) ||
-        arrayDeclarations.has(normalizedName)
+        arrayDeclarations.has(normalizedName) ||
+        matrices.has(normalizedName) ||
+        matrixDeclarations.has(normalizedName)
       ) {
         throw new Error(
           `[Línea ${statement.line}] La variable "${variable}" ya fue declarada o usada previamente.`
@@ -181,61 +222,142 @@ export class PseintInterpreter {
     variables: Map<string, RuntimeValue>,
     declarations: Map<string, VariableType>,
     arrays: Map<string, RuntimeValue[]>,
-    arrayDeclarations: Map<string, VariableType | null>
+    arrayDeclarations: Map<string, VariableType | null>,
+    matrices: Map<string, RuntimeValue[][]>,
+    matrixDeclarations: Map<string, VariableType | null>
   ): void {
     const normalizedName = normalizeName(statement.name);
 
-    if (arrays.has(normalizedName) || arrayDeclarations.has(normalizedName)) {
+    if (
+      arrays.has(normalizedName) ||
+      arrayDeclarations.has(normalizedName) ||
+      matrices.has(normalizedName) ||
+      matrixDeclarations.has(normalizedName)
+    ) {
       throw new Error(
-        `[Línea ${statement.line}] El arreglo "${statement.name}" ya fue dimensionado.`
+        `[Línea ${statement.line}] La estructura "${statement.name}" ya fue dimensionada.`
       );
     }
 
-    const sizeValue = this.evaluator.evaluate(
-      statement.sizeExpression,
-      variables,
-      arrays,
-      statement.line
+    if (statement.sizeExpressions.length === 1) {
+      const sizeValue = this.evaluator.evaluate(
+        statement.sizeExpressions[0],
+        variables,
+        arrays,
+        matrices,
+        statement.line
+      );
+
+      if (typeof sizeValue !== "number" || !Number.isInteger(sizeValue) || sizeValue <= 0) {
+        throw new Error(
+          `[Línea ${statement.line}] El tamaño del arreglo debe ser un entero mayor que cero.`
+        );
+      }
+
+      let elementType: VariableType | null = null;
+
+      if (declarations.has(normalizedName)) {
+        elementType = declarations.get(normalizedName)!;
+        declarations.delete(normalizedName);
+        variables.delete(normalizedName);
+      } else if (variables.has(normalizedName)) {
+        throw new Error(
+          `[Línea ${statement.line}] "${statement.name}" ya se está usando como variable escalar.`
+        );
+      }
+
+      const defaultValue =
+        elementType !== null ? getDefaultValueForType(elementType) : null;
+
+      arrays.set(
+        normalizedName,
+        Array.from({ length: sizeValue }, () => defaultValue)
+      );
+
+      arrayDeclarations.set(normalizedName, elementType);
+      return;
+    }
+
+    if (statement.sizeExpressions.length === 2) {
+      const rowsValue = this.evaluator.evaluate(
+        statement.sizeExpressions[0],
+        variables,
+        arrays,
+        matrices,
+        statement.line
+      );
+
+      const columnsValue = this.evaluator.evaluate(
+        statement.sizeExpressions[1],
+        variables,
+        arrays,
+        matrices,
+        statement.line
+      );
+
+      if (typeof rowsValue !== "number" || !Number.isInteger(rowsValue) || rowsValue <= 0) {
+        throw new Error(
+          `[Línea ${statement.line}] La cantidad de filas debe ser un entero mayor que cero.`
+        );
+      }
+
+      if (
+        typeof columnsValue !== "number" ||
+        !Number.isInteger(columnsValue) ||
+        columnsValue <= 0
+      ) {
+        throw new Error(
+          `[Línea ${statement.line}] La cantidad de columnas debe ser un entero mayor que cero.`
+        );
+      }
+
+      let elementType: VariableType | null = null;
+
+      if (declarations.has(normalizedName)) {
+        elementType = declarations.get(normalizedName)!;
+        declarations.delete(normalizedName);
+        variables.delete(normalizedName);
+      } else if (variables.has(normalizedName)) {
+        throw new Error(
+          `[Línea ${statement.line}] "${statement.name}" ya se está usando como variable escalar.`
+        );
+      }
+
+      const defaultValue =
+        elementType !== null ? getDefaultValueForType(elementType) : null;
+
+      matrices.set(
+        normalizedName,
+        Array.from({ length: rowsValue }, () =>
+          Array.from({ length: columnsValue }, () => defaultValue)
+        )
+      );
+
+      matrixDeclarations.set(normalizedName, elementType);
+      return;
+    }
+
+    throw new Error(
+      `[Línea ${statement.line}] Solo se soportan arreglos de 1 dimensión o matrices de 2 dimensiones.`
     );
-
-    if (typeof sizeValue !== "number" || !Number.isInteger(sizeValue) || sizeValue <= 0) {
-      throw new Error(
-        `[Línea ${statement.line}] El tamaño del arreglo debe ser un entero mayor que cero.`
-      );
-    }
-
-    let elementType: VariableType | null = null;
-
-    if (declarations.has(normalizedName)) {
-      elementType = declarations.get(normalizedName)!;
-      declarations.delete(normalizedName);
-      variables.delete(normalizedName);
-    } else if (variables.has(normalizedName)) {
-      throw new Error(
-        `[Línea ${statement.line}] "${statement.name}" ya se está usando como variable escalar.`
-      );
-    }
-
-    const defaultValue =
-      elementType !== null ? getDefaultValueForType(elementType) : null;
-
-    arrays.set(
-      normalizedName,
-      Array.from({ length: sizeValue }, () => defaultValue)
-    );
-
-    arrayDeclarations.set(normalizedName, elementType);
   }
 
   private executeWrite(
     statement: WriteStatementNode,
     variables: Map<string, RuntimeValue>,
     arrays: Map<string, RuntimeValue[]>,
+    matrices: Map<string, RuntimeValue[][]>,
     io: ProgramIOPort
   ): void {
     const text = statement.args
       .map((arg) => {
-        const value = this.evaluator.evaluate(arg, variables, arrays, statement.line);
+        const value = this.evaluator.evaluate(
+          arg,
+          variables,
+          arrays,
+          matrices,
+          statement.line
+        );
         return renderValue(value);
       })
       .join("");
@@ -249,15 +371,25 @@ export class PseintInterpreter {
     declarations: Map<string, VariableType>,
     arrays: Map<string, RuntimeValue[]>,
     arrayDeclarations: Map<string, VariableType | null>,
+    matrices: Map<string, RuntimeValue[][]>,
+    matrixDeclarations: Map<string, VariableType | null>,
     io: ProgramIOPort
   ): Promise<void> {
-    const targetLabel = renderTarget(statement.target, variables, arrays, statement.line);
+    const targetLabel = renderTarget(
+      statement.target,
+      variables,
+      arrays,
+      matrices,
+      statement.line
+    );
+
     const input = await io.requestInput(targetLabel);
 
     const expectedType = this.getTargetDeclaredType(
       statement.target,
       declarations,
-      arrayDeclarations
+      arrayDeclarations,
+      matrixDeclarations
     );
 
     const parsedValue = expectedType
@@ -271,7 +403,9 @@ export class PseintInterpreter {
       variables,
       declarations,
       arrays,
-      arrayDeclarations
+      arrayDeclarations,
+      matrices,
+      matrixDeclarations
     );
 
     io.print(`${targetLabel} <- ${renderValue(parsedValue)}`, "info");
@@ -282,12 +416,15 @@ export class PseintInterpreter {
     variables: Map<string, RuntimeValue>,
     declarations: Map<string, VariableType>,
     arrays: Map<string, RuntimeValue[]>,
-    arrayDeclarations: Map<string, VariableType | null>
+    arrayDeclarations: Map<string, VariableType | null>,
+    matrices: Map<string, RuntimeValue[][]>,
+    matrixDeclarations: Map<string, VariableType | null>
   ): void {
     const value = this.evaluator.evaluate(
       statement.expression,
       variables,
       arrays,
+      matrices,
       statement.line
     );
 
@@ -298,7 +435,9 @@ export class PseintInterpreter {
       variables,
       declarations,
       arrays,
-      arrayDeclarations
+      arrayDeclarations,
+      matrices,
+      matrixDeclarations
     );
   }
 
@@ -308,12 +447,15 @@ export class PseintInterpreter {
     declarations: Map<string, VariableType>,
     arrays: Map<string, RuntimeValue[]>,
     arrayDeclarations: Map<string, VariableType | null>,
+    matrices: Map<string, RuntimeValue[][]>,
+    matrixDeclarations: Map<string, VariableType | null>,
     io: ProgramIOPort
   ): Promise<void> {
     const conditionResult = this.evaluator.evaluate(
       statement.condition,
       variables,
       arrays,
+      matrices,
       statement.line
     );
 
@@ -332,6 +474,8 @@ export class PseintInterpreter {
         declarations,
         arrays,
         arrayDeclarations,
+        matrices,
+        matrixDeclarations,
         io
       );
     }
@@ -343,12 +487,15 @@ export class PseintInterpreter {
     declarations: Map<string, VariableType>,
     arrays: Map<string, RuntimeValue[]>,
     arrayDeclarations: Map<string, VariableType | null>,
+    matrices: Map<string, RuntimeValue[][]>,
+    matrixDeclarations: Map<string, VariableType | null>,
     io: ProgramIOPort
   ): Promise<void> {
     const baseValue = this.evaluator.evaluate(
       statement.expression,
       variables,
       arrays,
+      matrices,
       statement.line
     );
 
@@ -358,6 +505,7 @@ export class PseintInterpreter {
           matchExpression,
           variables,
           arrays,
+          matrices,
           currentCase.line
         );
 
@@ -369,6 +517,8 @@ export class PseintInterpreter {
               declarations,
               arrays,
               arrayDeclarations,
+              matrices,
+              matrixDeclarations,
               io
             );
           }
@@ -384,6 +534,8 @@ export class PseintInterpreter {
         declarations,
         arrays,
         arrayDeclarations,
+        matrices,
+        matrixDeclarations,
         io
       );
     }
@@ -395,6 +547,8 @@ export class PseintInterpreter {
     declarations: Map<string, VariableType>,
     arrays: Map<string, RuntimeValue[]>,
     arrayDeclarations: Map<string, VariableType | null>,
+    matrices: Map<string, RuntimeValue[][]>,
+    matrixDeclarations: Map<string, VariableType | null>,
     io: ProgramIOPort
   ): Promise<void> {
     let iterations = 0;
@@ -404,6 +558,7 @@ export class PseintInterpreter {
         statement.condition,
         variables,
         arrays,
+        matrices,
         statement.line
       );
 
@@ -432,6 +587,8 @@ export class PseintInterpreter {
           declarations,
           arrays,
           arrayDeclarations,
+          matrices,
+          matrixDeclarations,
           io
         );
       }
@@ -444,12 +601,15 @@ export class PseintInterpreter {
     declarations: Map<string, VariableType>,
     arrays: Map<string, RuntimeValue[]>,
     arrayDeclarations: Map<string, VariableType | null>,
+    matrices: Map<string, RuntimeValue[][]>,
+    matrixDeclarations: Map<string, VariableType | null>,
     io: ProgramIOPort
   ): Promise<void> {
     const startValue = this.evaluator.evaluate(
       statement.startExpression,
       variables,
       arrays,
+      matrices,
       statement.line
     );
 
@@ -457,6 +617,7 @@ export class PseintInterpreter {
       statement.endExpression,
       variables,
       arrays,
+      matrices,
       statement.line
     );
 
@@ -465,6 +626,7 @@ export class PseintInterpreter {
           statement.stepExpression,
           variables,
           arrays,
+          matrices,
           statement.line
         )
       : 1;
@@ -503,7 +665,9 @@ export class PseintInterpreter {
       variables,
       declarations,
       arrays,
-      arrayDeclarations
+      arrayDeclarations,
+      matrices,
+      matrixDeclarations
     );
 
     while (true) {
@@ -535,6 +699,8 @@ export class PseintInterpreter {
           declarations,
           arrays,
           arrayDeclarations,
+          matrices,
+          matrixDeclarations,
           io
         );
       }
@@ -552,7 +718,9 @@ export class PseintInterpreter {
         variables,
         declarations,
         arrays,
-        arrayDeclarations
+        arrayDeclarations,
+        matrices,
+        matrixDeclarations
       );
     }
   }
@@ -563,6 +731,8 @@ export class PseintInterpreter {
     declarations: Map<string, VariableType>,
     arrays: Map<string, RuntimeValue[]>,
     arrayDeclarations: Map<string, VariableType | null>,
+    matrices: Map<string, RuntimeValue[][]>,
+    matrixDeclarations: Map<string, VariableType | null>,
     io: ProgramIOPort
   ): Promise<void> {
     let iterations = 0;
@@ -583,6 +753,8 @@ export class PseintInterpreter {
           declarations,
           arrays,
           arrayDeclarations,
+          matrices,
+          matrixDeclarations,
           io
         );
       }
@@ -591,6 +763,7 @@ export class PseintInterpreter {
         statement.condition,
         variables,
         arrays,
+        matrices,
         statement.line
       );
 
@@ -609,13 +782,18 @@ export class PseintInterpreter {
   private getTargetDeclaredType(
     target: TargetNode,
     declarations: Map<string, VariableType>,
-    arrayDeclarations: Map<string, VariableType | null>
+    arrayDeclarations: Map<string, VariableType | null>,
+    matrixDeclarations: Map<string, VariableType | null>
   ): VariableType | null {
     if (target.kind === "variable") {
       return declarations.get(normalizeName(target.name)) ?? null;
     }
 
-    return arrayDeclarations.get(normalizeName(target.name)) ?? null;
+    if (target.kind === "array_element") {
+      return arrayDeclarations.get(normalizeName(target.name)) ?? null;
+    }
+
+    return matrixDeclarations.get(normalizeName(target.name)) ?? null;
   }
 
   private assignTarget(
@@ -625,7 +803,9 @@ export class PseintInterpreter {
     variables: Map<string, RuntimeValue>,
     declarations: Map<string, VariableType>,
     arrays: Map<string, RuntimeValue[]>,
-    arrayDeclarations: Map<string, VariableType | null>
+    arrayDeclarations: Map<string, VariableType | null>,
+    matrices: Map<string, RuntimeValue[][]>,
+    matrixDeclarations: Map<string, VariableType | null>
   ): void {
     if (target.kind === "variable") {
       this.assignVariable(
@@ -635,18 +815,34 @@ export class PseintInterpreter {
         variables,
         declarations,
         arrays,
-        arrayDeclarations
+        arrayDeclarations,
+        matrices,
+        matrixDeclarations
       );
       return;
     }
 
-    this.assignArrayElement(
+    if (target.kind === "array_element") {
+      this.assignArrayElement(
+        target,
+        value,
+        line,
+        variables,
+        arrays,
+        arrayDeclarations,
+        matrices
+      );
+      return;
+    }
+
+    this.assignMatrixElement(
       target,
       value,
       line,
       variables,
       arrays,
-      arrayDeclarations
+      matrices,
+      matrixDeclarations
     );
   }
 
@@ -657,13 +853,20 @@ export class PseintInterpreter {
     variables: Map<string, RuntimeValue>,
     declarations: Map<string, VariableType>,
     arrays: Map<string, RuntimeValue[]>,
-    arrayDeclarations: Map<string, VariableType | null>
+    arrayDeclarations: Map<string, VariableType | null>,
+    matrices: Map<string, RuntimeValue[][]>,
+    matrixDeclarations: Map<string, VariableType | null>
   ): void {
     const normalizedName = normalizeName(variableName);
 
-    if (arrays.has(normalizedName) || arrayDeclarations.has(normalizedName)) {
+    if (
+      arrays.has(normalizedName) ||
+      arrayDeclarations.has(normalizedName) ||
+      matrices.has(normalizedName) ||
+      matrixDeclarations.has(normalizedName)
+    ) {
       throw new Error(
-        `[Línea ${line}] "${variableName}" es un arreglo. Debes indicar un índice.`
+        `[Línea ${line}] "${variableName}" es una estructura indexada. Debes indicar sus índices.`
       );
     }
 
@@ -682,12 +885,19 @@ export class PseintInterpreter {
     line: number,
     variables: Map<string, RuntimeValue>,
     arrays: Map<string, RuntimeValue[]>,
-    arrayDeclarations: Map<string, VariableType | null>
+    arrayDeclarations: Map<string, VariableType | null>,
+    matrices: Map<string, RuntimeValue[][]>
   ): void {
     const normalizedName = normalizeName(target.name);
     const arrayValues = arrays.get(normalizedName);
 
     if (!arrayValues) {
+      if (matrices.has(normalizedName)) {
+        throw new Error(
+          `[Línea ${line}] La matriz "${target.name}" requiere dos índices.`
+        );
+      }
+
       throw new Error(
         `[Línea ${line}] El arreglo "${target.name}" no ha sido dimensionado.`
       );
@@ -698,7 +908,8 @@ export class PseintInterpreter {
       target.indexExpression,
       line,
       variables,
-      arrays
+      arrays,
+      matrices
     );
 
     const declaredType = arrayDeclarations.get(normalizedName) ?? null;
@@ -710,17 +921,62 @@ export class PseintInterpreter {
     arrayValues[index - 1] = finalValue;
   }
 
+  private assignMatrixElement(
+    target: MatrixElementTargetNode,
+    value: RuntimeValue,
+    line: number,
+    variables: Map<string, RuntimeValue>,
+    arrays: Map<string, RuntimeValue[]>,
+    matrices: Map<string, RuntimeValue[][]>,
+    matrixDeclarations: Map<string, VariableType | null>
+  ): void {
+    const normalizedName = normalizeName(target.name);
+    const matrixValues = matrices.get(normalizedName);
+
+    if (!matrixValues) {
+      if (arrays.has(normalizedName)) {
+        throw new Error(
+          `[Línea ${line}] El arreglo "${target.name}" solo admite un índice.`
+        );
+      }
+
+      throw new Error(
+        `[Línea ${line}] La matriz "${target.name}" no ha sido dimensionada.`
+      );
+    }
+
+    const { row, column } = this.resolveMatrixIndices(
+      target.name,
+      target.rowExpression,
+      target.columnExpression,
+      line,
+      variables,
+      arrays,
+      matrices
+    );
+
+    const declaredType = matrixDeclarations.get(normalizedName) ?? null;
+
+    const finalValue = declaredType
+      ? coerceValueToType(value, declaredType, line)
+      : value;
+
+    matrixValues[row - 1][column - 1] = finalValue;
+  }
+
   private resolveArrayIndex(
     arrayName: string,
     indexExpression: string,
     line: number,
     variables: Map<string, RuntimeValue>,
-    arrays: Map<string, RuntimeValue[]>
+    arrays: Map<string, RuntimeValue[]>,
+    matrices: Map<string, RuntimeValue[][]>
   ): number {
     const indexValue = this.evaluator.evaluate(
       indexExpression,
       variables,
       arrays,
+      matrices,
       line
     );
 
@@ -745,6 +1001,72 @@ export class PseintInterpreter {
     }
 
     return indexValue;
+  }
+
+  private resolveMatrixIndices(
+    matrixName: string,
+    rowExpression: string,
+    columnExpression: string,
+    line: number,
+    variables: Map<string, RuntimeValue>,
+    arrays: Map<string, RuntimeValue[]>,
+    matrices: Map<string, RuntimeValue[][]>
+  ): { row: number; column: number } {
+    const rowValue = this.evaluator.evaluate(
+      rowExpression,
+      variables,
+      arrays,
+      matrices,
+      line
+    );
+
+    const columnValue = this.evaluator.evaluate(
+      columnExpression,
+      variables,
+      arrays,
+      matrices,
+      line
+    );
+
+    if (typeof rowValue !== "number" || !Number.isInteger(rowValue)) {
+      throw new Error(
+        `[Línea ${line}] La fila de la matriz "${matrixName}" debe ser un entero.`
+      );
+    }
+
+    if (typeof columnValue !== "number" || !Number.isInteger(columnValue)) {
+      throw new Error(
+        `[Línea ${line}] La columna de la matriz "${matrixName}" debe ser un entero.`
+      );
+    }
+
+    const matrixValues = matrices.get(normalizeName(matrixName));
+
+    if (!matrixValues) {
+      throw new Error(
+        `[Línea ${line}] La matriz "${matrixName}" no ha sido dimensionada.`
+      );
+    }
+
+    const totalRows = matrixValues.length;
+    const totalColumns = matrixValues[0]?.length ?? 0;
+
+    if (rowValue < 1 || rowValue > totalRows) {
+      throw new Error(
+        `[Línea ${line}] Fila fuera de rango en "${matrixName}[${rowValue},${columnValue}]". Rango válido de fila: 1..${totalRows}.`
+      );
+    }
+
+    if (columnValue < 1 || columnValue > totalColumns) {
+      throw new Error(
+        `[Línea ${line}] Columna fuera de rango en "${matrixName}[${rowValue},${columnValue}]". Rango válido de columna: 1..${totalColumns}.`
+      );
+    }
+
+    return {
+      row: rowValue,
+      column: columnValue,
+    };
   }
 }
 
@@ -784,21 +1106,44 @@ function renderTarget(
   target: TargetNode,
   variables: Map<string, RuntimeValue>,
   arrays: Map<string, RuntimeValue[]>,
+  matrices: Map<string, RuntimeValue[][]>,
   line: number
 ): string {
+  const evaluator = new ExpressionEvaluator();
+
   if (target.kind === "variable") {
     return target.name;
   }
 
-  const evaluator = new ExpressionEvaluator();
-  const indexValue = evaluator.evaluate(
-    target.indexExpression,
+  if (target.kind === "array_element") {
+    const indexValue = evaluator.evaluate(
+      target.indexExpression,
+      variables,
+      arrays,
+      matrices,
+      line
+    );
+
+    return `${target.name}[${String(indexValue)}]`;
+  }
+
+  const rowValue = evaluator.evaluate(
+    target.rowExpression,
     variables,
     arrays,
+    matrices,
     line
   );
 
-  return `${target.name}[${String(indexValue)}]`;
+  const columnValue = evaluator.evaluate(
+    target.columnExpression,
+    variables,
+    arrays,
+    matrices,
+    line
+  );
+
+  return `${target.name}[${String(rowValue)},${String(columnValue)}]`;
 }
 
 function ensureNumber(
