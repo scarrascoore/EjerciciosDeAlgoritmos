@@ -14,7 +14,8 @@ export type StatementNode =
   | AssignmentStatementNode
   | IfStatementNode
   | WhileStatementNode
-  | ForStatementNode;
+  | ForStatementNode
+  | SegunStatementNode;
 
 export interface DefineStatementNode {
   type: "define";
@@ -83,6 +84,20 @@ export interface ForStatementNode {
   startExpression: string;
   endExpression: string;
   stepExpression: string | null;
+  body: StatementNode[];
+  line: number;
+}
+
+export interface SegunStatementNode {
+  type: "segun";
+  expression: string;
+  cases: SegunCaseNode[];
+  defaultBranch: StatementNode[];
+  line: number;
+}
+
+export interface SegunCaseNode {
+  matches: string[];
   body: StatementNode[];
   line: number;
 }
