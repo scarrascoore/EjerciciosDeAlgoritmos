@@ -216,14 +216,22 @@ export class PseintLineParser {
 
     if (!match) {
       throw new Error(
-        `[Línea ${lineNumber}] Sintaxis inválida en Dimension. Ejemplo: Dimension notas[5]`
+        `[Línea ${lineNumber}] Sintaxis inválida en Dimension. Ejemplo: Dimension tabla[3,4]`
+      );
+    }
+
+    const rawSizes = splitArguments(match[2].trim());
+
+    if (rawSizes.length < 1 || rawSizes.length > 2) {
+      throw new Error(
+        `[Línea ${lineNumber}] Dimension solo soporta arreglos de 1 dimensión o matrices de 2 dimensiones.`
       );
     }
 
     return {
       type: "dimension",
       name: match[1].trim(),
-      sizeExpression: match[2].trim(),
+      sizeExpressions: rawSizes,
       line: lineNumber,
     };
   }
@@ -351,16 +359,13 @@ export class PseintLineParser {
     const line = this.currentLine().trim();
 
     if (!/^Repetir$/i.test(line)) {
-      throw new Error(
-        `[Línea ${lineNumber}] Sintaxis inválida en Repetir.`
-      );
+      throw new Error(`[Línea ${lineNumber}] Sintaxis inválida en Repetir.`);
     }
 
     this.current++;
 
-    const body = this.parseBlock(
-      [],
-      (lineText) => /^Hasta\s+Que\s+.+$/i.test(lineText)
+    const body = this.parseBlock([], (lineText) =>
+      /^Hasta\s+Que\s+.+$/i.test(lineText)
     );
 
     if (body.length === 0) {
@@ -628,14 +633,32 @@ export class PseintLineParser {
 }
 
 function parseTarget(rawTarget: string, lineNumber: number): TargetNode {
-  const arrayMatch = rawTarget.match(/^([a-zA-Z_]\w*)\s*\[\s*(.+)\s*\]$/i);
+  const indexedMatch = rawTarget.match(/^([a-zA-Z_]\w*)\s*\[\s*(.+)\s*\]$/i);
 
-  if (arrayMatch) {
-    return {
-      kind: "array_element",
-      name: arrayMatch[1].trim(),
-      indexExpression: arrayMatch[2].trim(),
-    };
+  if (indexedMatch) {
+    const name = indexedMatch[1].trim();
+    const rawIndexes = splitArguments(indexedMatch[2].trim());
+
+    if (rawIndexes.length === 1) {
+      return {
+        kind: "array_element",
+        name,
+        indexExpression: rawIndexes[0].trim(),
+      };
+    }
+
+    if (rawIndexes.length === 2) {
+      return {
+        kind: "matrix_element",
+        name,
+        rowExpression: rawIndexes[0].trim(),
+        columnExpression: rawIndexes[1].trim(),
+      };
+    }
+
+    throw new Error(
+      `[Línea ${lineNumber}] Solo se soportan accesos de una o dos dimensiones.`
+    );
   }
 
   if (!/^[a-zA-Z_]\w*$/.test(rawTarget)) {
