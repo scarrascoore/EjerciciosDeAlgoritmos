@@ -15,7 +15,8 @@ export type StatementNode =
   | IfStatementNode
   | WhileStatementNode
   | ForStatementNode
-  | SegunStatementNode;
+  | SegunStatementNode
+  | RepeatUntilStatementNode;
 
 export interface DefineStatementNode {
   type: "define";
@@ -99,5 +100,12 @@ export interface SegunStatementNode {
 export interface SegunCaseNode {
   matches: string[];
   body: StatementNode[];
+  line: number;
+}
+
+export interface RepeatUntilStatementNode {
+  type: "repeat_until";
+  body: StatementNode[];
+  condition: string;
   line: number;
 }
