@@ -8,6 +8,7 @@ import type {
   IfStatementNode,
   ProgramNode,
   ReadStatementNode,
+  SegunStatementNode,
   StatementNode,
   TargetNode,
   WhileStatementNode,
@@ -115,6 +116,17 @@ export class PseintInterpreter {
 
       case "for":
         await this.executeFor(
+          statement,
+          variables,
+          declarations,
+          arrays,
+          arrayDeclarations,
+          io
+        );
+        return;
+
+      case "segun":
+        await this.executeSegun(
           statement,
           variables,
           declarations,
@@ -302,6 +314,58 @@ export class PseintInterpreter {
     const branch = conditionResult ? statement.thenBranch : statement.elseBranch;
 
     for (const nestedStatement of branch) {
+      await this.executeStatement(
+        nestedStatement,
+        variables,
+        declarations,
+        arrays,
+        arrayDeclarations,
+        io
+      );
+    }
+  }
+
+  private async executeSegun(
+    statement: SegunStatementNode,
+    variables: Map<string, RuntimeValue>,
+    declarations: Map<string, VariableType>,
+    arrays: Map<string, RuntimeValue[]>,
+    arrayDeclarations: Map<string, VariableType | null>,
+    io: ProgramIOPort
+  ): Promise<void> {
+    const baseValue = this.evaluator.evaluate(
+      statement.expression,
+      variables,
+      arrays,
+      statement.line
+    );
+
+    for (const currentCase of statement.cases) {
+      for (const matchExpression of currentCase.matches) {
+        const caseValue = this.evaluator.evaluate(
+          matchExpression,
+          variables,
+          arrays,
+          currentCase.line
+        );
+
+        if (valuesAreEqual(baseValue, caseValue)) {
+          for (const nestedStatement of currentCase.body) {
+            await this.executeStatement(
+              nestedStatement,
+              variables,
+              declarations,
+              arrays,
+              arrayDeclarations,
+              io
+            );
+          }
+          return;
+        }
+      }
+    }
+
+    for (const nestedStatement of statement.defaultBranch) {
       await this.executeStatement(
         nestedStatement,
         variables,
@@ -686,4 +750,8 @@ function ensureNumber(
   }
 
   return value;
+}
+
+function valuesAreEqual(left: RuntimeValue, right: RuntimeValue): boolean {
+  return left === right;
 }
