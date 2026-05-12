@@ -6,6 +6,8 @@ import type {
   IfStatementNode,
   ProgramNode,
   ReadStatementNode,
+  SegunCaseNode,
+  SegunStatementNode,
   StatementNode,
   TargetNode,
   WhileStatementNode,
@@ -28,28 +30,23 @@ export class PseintLineParser {
     }
 
     const firstLine = this.currentLine().trim();
-    const startMatch = firstLine.match(/^(Algoritmo|Proceso)\s+(.+)$/i);
+    const algorithmMatch = firstLine.match(/^Algoritmo\s+(.+)$/i);
 
-    if (!startMatch) {
+    if (!algorithmMatch) {
       throw new Error(
-        `[Línea ${this.current + 1}] El programa debe iniciar con "Algoritmo Nombre" o "Proceso Nombre".`
+        `[Línea ${this.current + 1}] El programa debe iniciar con "Algoritmo NombrePrograma".`
       );
     }
 
-    const programName = startMatch[2].trim();
+    const programName = algorithmMatch[1].trim();
     this.current++;
 
-    const body = this.parseBlock(["FinAlgoritmo", "FinProceso"]);
+    const body = this.parseBlock(["FinAlgoritmo"]);
 
     this.skipIgnorableLines();
 
-    if (
-      this.isAtEnd() ||
-      !/^(FinAlgoritmo|FinProceso)$/i.test(this.currentLine().trim())
-    ) {
-      throw new Error(
-        `No se encontró la instrucción final "FinAlgoritmo" o "FinProceso".`
-      );
+    if (this.isAtEnd() || !/^FinAlgoritmo$/i.test(this.currentLine().trim())) {
+      throw new Error(`No se encontró la instrucción final "FinAlgoritmo".`);
     }
 
     this.current++;
@@ -57,7 +54,7 @@ export class PseintLineParser {
 
     if (!this.isAtEnd()) {
       throw new Error(
-        `[Línea ${this.current + 1}] Hay contenido no esperado después del fin del programa.`
+        `[Línea ${this.current + 1}] Hay contenido no esperado después de "FinAlgoritmo".`
       );
     }
 
@@ -68,7 +65,10 @@ export class PseintLineParser {
     };
   }
 
-  private parseBlock(stopTokens: string[]): StatementNode[] {
+  private parseBlock(
+    stopTokens: string[],
+    extraStopCondition?: (line: string) => boolean
+  ): StatementNode[] {
     const statements: StatementNode[] = [];
 
     while (true) {
@@ -80,7 +80,10 @@ export class PseintLineParser {
 
       const trimmed = this.currentLine().trim();
 
-      if (this.isStopToken(trimmed, stopTokens)) {
+      if (
+        this.isStopToken(trimmed, stopTokens) ||
+        (extraStopCondition ? extraStopCondition(trimmed) : false)
+      ) {
         return statements;
       }
 
@@ -93,6 +96,11 @@ export class PseintLineParser {
       if (/^Dimension\s+/i.test(trimmed)) {
         statements.push(this.parseDimension(trimmed, this.current + 1));
         this.current++;
+        continue;
+      }
+
+      if (/^Segun\s+.+\s+Hacer$/i.test(trimmed)) {
+        statements.push(this.parseSegun());
         continue;
       }
 
@@ -111,7 +119,7 @@ export class PseintLineParser {
         continue;
       }
 
-      if (/^(Escribir|Imprimir)\s+/i.test(trimmed)) {
+      if (/^Escribir\s+/i.test(trimmed)) {
         statements.push(this.parseWrite(trimmed, this.current + 1));
         this.current++;
         continue;
@@ -123,7 +131,7 @@ export class PseintLineParser {
         continue;
       }
 
-      if (trimmed.includes("<-") || trimmed.includes("=")) {
+      if (trimmed.includes("<-")) {
         statements.push(this.parseAssignment(trimmed, this.current + 1));
         this.current++;
         continue;
@@ -210,6 +218,126 @@ export class PseintLineParser {
       type: "dimension",
       name: match[1].trim(),
       sizeExpression: match[2].trim(),
+      line: lineNumber,
+    };
+  }
+
+  private parseSegun(): SegunStatementNode {
+    const lineNumber = this.current + 1;
+    const line = this.currentLine().trim();
+
+    const match = line.match(/^Segun\s+(.+)\s+Hacer$/i);
+
+    if (!match) {
+      throw new Error(
+        `[Línea ${lineNumber}] Sintaxis inválida en Segun. Ejemplo: Segun opcion Hacer`
+      );
+    }
+
+    const expression = match[1].trim();
+    this.current++;
+
+    const cases: SegunCaseNode[] = [];
+    let defaultBranch: StatementNode[] = [];
+    let defaultSeen = false;
+
+    while (true) {
+      this.skipIgnorableLines();
+
+      if (this.isAtEnd()) {
+        throw new Error(
+          `[Línea ${lineNumber}] La estructura Segun debe cerrarse con "FinSegun".`
+        );
+      }
+
+      const trimmed = this.currentLine().trim();
+
+      if (/^FinSegun$/i.test(trimmed)) {
+        this.current++;
+        break;
+      }
+
+      if (this.isDeOtroModoLine(trimmed)) {
+        if (defaultSeen) {
+          throw new Error(
+            `[Línea ${this.current + 1}] "De Otro Modo" no puede repetirse.`
+          );
+        }
+
+        defaultSeen = true;
+        this.current++;
+
+        defaultBranch = this.parseBlock(
+          ["FinSegun"],
+          (lineText) => this.isSegunCaseLine(lineText) || this.isDeOtroModoLine(lineText)
+        );
+
+        this.skipIgnorableLines();
+
+        if (this.isAtEnd() || !/^FinSegun$/i.test(this.currentLine().trim())) {
+          throw new Error(
+            `[Línea ${lineNumber}] La rama "De Otro Modo" debe cerrarse con "FinSegun".`
+          );
+        }
+
+        this.current++;
+        break;
+      }
+
+      if (this.isSegunCaseLine(trimmed)) {
+        cases.push(this.parseSegunCase());
+        continue;
+      }
+
+      throw new Error(
+        `[Línea ${this.current + 1}] Se esperaba un caso, "De Otro Modo" o "FinSegun" dentro de Segun.`
+      );
+    }
+
+    if (cases.length === 0 && defaultBranch.length === 0) {
+      throw new Error(
+        `[Línea ${lineNumber}] La estructura Segun debe tener al menos un caso o "De Otro Modo".`
+      );
+    }
+
+    return {
+      type: "segun",
+      expression,
+      cases,
+      defaultBranch,
+      line: lineNumber,
+    };
+  }
+
+  private parseSegunCase(): SegunCaseNode {
+    const lineNumber = this.current + 1;
+    const line = this.currentLine().trim();
+
+    if (!this.isSegunCaseLine(line)) {
+      throw new Error(
+        `[Línea ${lineNumber}] Caso inválido dentro de Segun.`
+      );
+    }
+
+    const rawValues = line.slice(0, -1).trim();
+    const matches = splitArguments(rawValues);
+
+    if (matches.length === 0) {
+      throw new Error(
+        `[Línea ${lineNumber}] El caso de Segun debe contener al menos un valor.`
+      );
+    }
+
+    this.current++;
+
+    const body = this.parseBlock(
+      ["FinSegun"],
+      (lineText) => this.isSegunCaseLine(lineText) || this.isDeOtroModoLine(lineText)
+    );
+
+    return {
+      matches,
+      body,
       line: lineNumber,
     };
   }
@@ -310,12 +438,12 @@ export class PseintLineParser {
     const line = this.currentLine().trim();
 
     const match = line.match(
-      /^Para\s+([a-zA-Z_]\w*)\s*(?:<-|=)\s*(.+?)\s+Hasta\s+(.+?)(?:\s+Con\s+Paso\s+(.+?))?\s+Hacer$/i
+      /^Para\s+([a-zA-Z_]\w*)\s*<-\s*(.+?)\s+Hasta\s+(.+?)(?:\s+Con\s+Paso\s+(.+?))?\s+Hacer$/i
     );
 
     if (!match) {
       throw new Error(
-        `[Línea ${lineNumber}] Sintaxis inválida en Para. Ejemplo: Para i = 1 Hasta 10 Con Paso 1 Hacer`
+        `[Línea ${lineNumber}] Sintaxis inválida en Para. Ejemplo: Para i <- 1 Hasta 10 Con Paso 1 Hacer`
       );
     }
 
@@ -347,19 +475,17 @@ export class PseintLineParser {
   }
 
   private parseWrite(line: string, lineNumber: number): WriteStatementNode {
-    const match = line.match(/^(Escribir|Imprimir)\s+(.+)$/i);
+    const match = line.match(/^Escribir\s+(.+)$/i);
 
     if (!match) {
-      throw new Error(
-        `[Línea ${lineNumber}] Sintaxis inválida en Escribir/Imprimir.`
-      );
+      throw new Error(`[Línea ${lineNumber}] Sintaxis inválida en Escribir.`);
     }
 
-    const args = splitWriteArguments(match[2]);
+    const args = splitArguments(match[1]);
 
     if (args.length === 0) {
       throw new Error(
-        `[Línea ${lineNumber}] Escribir/Imprimir debe contener al menos un argumento.`
+        `[Línea ${lineNumber}] Escribir debe contener al menos un argumento.`
       );
     }
 
@@ -388,12 +514,10 @@ export class PseintLineParser {
     line: string,
     lineNumber: number
   ): AssignmentStatementNode {
-    const match = line.match(/^(.+?)\s*(?:<-|=)\s*(.+)$/i);
+    const match = line.match(/^(.+?)\s*<-\s*(.+)$/i);
 
     if (!match) {
-      throw new Error(
-        `[Línea ${lineNumber}] Sintaxis inválida en asignación.`
-      );
+      throw new Error(`[Línea ${lineNumber}] Sintaxis inválida en asignación.`);
     }
 
     return {
@@ -402,6 +526,16 @@ export class PseintLineParser {
       expression: match[2].trim(),
       line: lineNumber,
     };
+  }
+
+  private isSegunCaseLine(line: string): boolean {
+    if (this.isDeOtroModoLine(line)) return false;
+    if (/^FinSegun$/i.test(line)) return false;
+    return /^.+:\s*$/.test(line);
+  }
+
+  private isDeOtroModoLine(line: string): boolean {
+    return /^De\s+Otro\s+Modo\s*:?\s*$/i.test(line);
   }
 
   private skipIgnorableLines(): void {
@@ -443,9 +577,7 @@ function parseTarget(rawTarget: string, lineNumber: number): TargetNode {
   }
 
   if (!/^[a-zA-Z_]\w*$/.test(rawTarget)) {
-    throw new Error(
-      `[Línea ${lineNumber}] Destino inválido: "${rawTarget}".`
-    );
+    throw new Error(`[Línea ${lineNumber}] Destino inválido: "${rawTarget}".`);
   }
 
   return {
@@ -454,7 +586,7 @@ function parseTarget(rawTarget: string, lineNumber: number): TargetNode {
   };
 }
 
-function splitWriteArguments(input: string): string[] {
+function splitArguments(input: string): string[] {
   const result: string[] = [];
   let current = "";
   let inString = false;
@@ -465,55 +597,40 @@ function splitWriteArguments(input: string): string[] {
     const char = input[i];
 
     if (char === '"') {
-      if (inString) {
-        current += char;
-        result.push(current);
-        current = "";
-        inString = false;
-      } else {
-        if (current.trim()) {
-          result.push(current.trim());
-          current = "";
-        }
-        current = '"';
-        inString = true;
-      }
-      continue;
-    }
-
-    if (inString) {
+      inString = !inString;
       current += char;
       continue;
     }
 
-    if (char === "(") {
+    if (!inString && char === "(") {
       parenthesisDepth++;
       current += char;
       continue;
     }
 
-    if (char === ")") {
+    if (!inString && char === ")") {
       parenthesisDepth--;
       current += char;
       continue;
     }
 
-    if (char === "[") {
+    if (!inString && char === "[") {
       bracketDepth++;
       current += char;
       continue;
     }
 
-    if (char === "]") {
+    if (!inString && char === "]") {
       bracketDepth--;
       current += char;
       continue;
     }
 
     if (
-      char === "," &&
+      !inString &&
       parenthesisDepth === 0 &&
-      bracketDepth === 0
+      bracketDepth === 0 &&
+      char === ","
     ) {
       if (current.trim()) {
         result.push(current.trim());
@@ -523,10 +640,6 @@ function splitWriteArguments(input: string): string[] {
     }
 
     current += char;
-  }
-
-  if (inString) {
-    throw new Error(`Cadena sin cerrar en Escribir/Imprimir.`);
   }
 
   if (current.trim()) {
