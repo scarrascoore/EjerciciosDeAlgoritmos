@@ -6,6 +6,7 @@ import type {
   IfStatementNode,
   ProgramNode,
   ReadStatementNode,
+  RepeatUntilStatementNode,
   SegunCaseNode,
   SegunStatementNode,
   StatementNode,
@@ -101,6 +102,11 @@ export class PseintLineParser {
 
       if (/^Segun\s+.+\s+Hacer$/i.test(trimmed)) {
         statements.push(this.parseSegun());
+        continue;
+      }
+
+      if (/^Repetir$/i.test(trimmed)) {
+        statements.push(this.parseRepeatUntil());
         continue;
       }
 
@@ -314,9 +320,7 @@ export class PseintLineParser {
     const line = this.currentLine().trim();
 
     if (!this.isSegunCaseLine(line)) {
-      throw new Error(
-        `[Línea ${lineNumber}] Caso inválido dentro de Segun.`
-      );
+      throw new Error(`[Línea ${lineNumber}] Caso inválido dentro de Segun.`);
     }
 
     const rawValues = line.slice(0, -1).trim();
@@ -338,6 +342,64 @@ export class PseintLineParser {
     return {
       matches,
       body,
+      line: lineNumber,
+    };
+  }
+
+  private parseRepeatUntil(): RepeatUntilStatementNode {
+    const lineNumber = this.current + 1;
+    const line = this.currentLine().trim();
+
+    if (!/^Repetir$/i.test(line)) {
+      throw new Error(
+        `[Línea ${lineNumber}] Sintaxis inválida en Repetir.`
+      );
+    }
+
+    this.current++;
+
+    const body = this.parseBlock(
+      [],
+      (lineText) => /^Hasta\s+Que\s+.+$/i.test(lineText)
+    );
+
+    if (body.length === 0) {
+      throw new Error(
+        `[Línea ${lineNumber}] El bloque Repetir no puede estar vacío.`
+      );
+    }
+
+    this.skipIgnorableLines();
+
+    if (this.isAtEnd()) {
+      throw new Error(
+        `[Línea ${lineNumber}] La estructura Repetir debe cerrarse con "Hasta Que condicion".`
+      );
+    }
+
+    const closingLine = this.currentLine().trim();
+    const match = closingLine.match(/^Hasta\s+Que\s+(.+)$/i);
+
+    if (!match) {
+      throw new Error(
+        `[Línea ${lineNumber}] La estructura Repetir debe cerrarse con "Hasta Que condicion".`
+      );
+    }
+
+    const condition = match[1].trim();
+
+    if (!condition) {
+      throw new Error(
+        `[Línea ${this.current + 1}] La condición de "Hasta Que" no puede estar vacía.`
+      );
+    }
+
+    this.current++;
+
+    return {
+      type: "repeat_until",
+      body,
+      condition,
       line: lineNumber,
     };
   }
