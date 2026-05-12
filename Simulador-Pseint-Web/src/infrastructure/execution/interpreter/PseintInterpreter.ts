@@ -8,6 +8,7 @@ import type {
   IfStatementNode,
   ProgramNode,
   ReadStatementNode,
+  RepeatUntilStatementNode,
   SegunStatementNode,
   StatementNode,
   TargetNode,
@@ -103,6 +104,17 @@ export class PseintInterpreter {
         );
         return;
 
+      case "segun":
+        await this.executeSegun(
+          statement,
+          variables,
+          declarations,
+          arrays,
+          arrayDeclarations,
+          io
+        );
+        return;
+
       case "while":
         await this.executeWhile(
           statement,
@@ -125,8 +137,8 @@ export class PseintInterpreter {
         );
         return;
 
-      case "segun":
-        await this.executeSegun(
+      case "repeat_until":
+        await this.executeRepeatUntil(
           statement,
           variables,
           declarations,
@@ -542,6 +554,55 @@ export class PseintInterpreter {
         arrays,
         arrayDeclarations
       );
+    }
+  }
+
+  private async executeRepeatUntil(
+    statement: RepeatUntilStatementNode,
+    variables: Map<string, RuntimeValue>,
+    declarations: Map<string, VariableType>,
+    arrays: Map<string, RuntimeValue[]>,
+    arrayDeclarations: Map<string, VariableType | null>,
+    io: ProgramIOPort
+  ): Promise<void> {
+    let iterations = 0;
+
+    while (true) {
+      iterations++;
+
+      if (iterations > MAX_LOOP_ITERATIONS) {
+        throw new Error(
+          `[Línea ${statement.line}] Se superó el límite de ${MAX_LOOP_ITERATIONS} iteraciones en Repetir. Posible bucle infinito.`
+        );
+      }
+
+      for (const nestedStatement of statement.body) {
+        await this.executeStatement(
+          nestedStatement,
+          variables,
+          declarations,
+          arrays,
+          arrayDeclarations,
+          io
+        );
+      }
+
+      const conditionResult = this.evaluator.evaluate(
+        statement.condition,
+        variables,
+        arrays,
+        statement.line
+      );
+
+      if (typeof conditionResult !== "boolean") {
+        throw new Error(
+          `[Línea ${statement.line}] La condición de "Hasta Que" debe devolver Verdadero o Falso.`
+        );
+      }
+
+      if (conditionResult) {
+        break;
+      }
     }
   }
 
