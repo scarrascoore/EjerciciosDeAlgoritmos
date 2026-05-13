@@ -1,10 +1,12 @@
 import type { RuntimeValue } from "../../../domain/models/RuntimeValue";
+import { invokeBuiltinFunction } from "./BuiltinFunctions";
 
 type TokenType =
   | "number"
   | "string"
   | "identifier"
   | "indexed_access"
+  | "function_call"
   | "operator"
   | "paren";
 
@@ -12,6 +14,7 @@ interface Token {
   type: TokenType;
   value: string;
   indicesExpressions?: string[];
+  argumentsExpressions?: string[];
 }
 
 const OPERATOR_PRECEDENCE: Record<string, number> = {
@@ -150,6 +153,21 @@ function tokenize(expression: string): Token[] {
         lookAhead++;
       }
 
+      if (expression[lookAhead] === "(") {
+        const { content, nextIndex } = readParenthesisContent(expression, lookAhead);
+        const argumentsExpressions = splitTopLevelArguments(content);
+
+        tokens.push({
+          type: "function_call",
+          value,
+          argumentsExpressions:
+            content.trim() === "" ? [] : argumentsExpressions.map((item) => item.trim()),
+        });
+
+        index = nextIndex;
+        continue;
+      }
+
       if (expression[lookAhead] === "[") {
         const { content, nextIndex } = readBracketContent(expression, lookAhead);
         const indicesExpressions = splitTopLevelArguments(content);
@@ -201,6 +219,50 @@ function tokenize(expression: string): Token[] {
   return tokens;
 }
 
+function readParenthesisContent(
+  expression: string,
+  startIndex: number
+): { content: string; nextIndex: number } {
+  let index = startIndex;
+  let depth = 0;
+  let content = "";
+
+  while (index < expression.length) {
+    const char = expression[index];
+
+    if (char === "(") {
+      depth++;
+
+      if (depth > 1) {
+        content += char;
+      }
+
+      index++;
+      continue;
+    }
+
+    if (char === ")") {
+      depth--;
+
+      if (depth === 0) {
+        return {
+          content,
+          nextIndex: index + 1,
+        };
+      }
+
+      content += char;
+      index++;
+      continue;
+    }
+
+    content += char;
+    index++;
+  }
+
+  throw new Error(`Paréntesis desbalanceados en llamada a función.`);
+}
+
 function readBracketContent(
   expression: string,
   startIndex: number
@@ -214,15 +276,18 @@ function readBracketContent(
 
     if (char === "[") {
       depth++;
+
       if (depth > 1) {
         content += char;
       }
+
       index++;
       continue;
     }
 
     if (char === "]") {
       depth--;
+
       if (depth === 0) {
         return {
           content,
@@ -288,9 +353,7 @@ function splitTopLevelArguments(input: string): string[] {
       bracketDepth === 0 &&
       char === ","
     ) {
-      if (current.trim()) {
-        result.push(current.trim());
-      }
+      result.push(current.trim());
       current = "";
       continue;
     }
@@ -298,7 +361,7 @@ function splitTopLevelArguments(input: string): string[] {
     current += char;
   }
 
-  if (current.trim()) {
+  if (current.trim() !== "") {
     result.push(current.trim());
   }
 
@@ -338,7 +401,8 @@ function toRpn(tokens: Token[]): Token[] {
       token.type === "number" ||
       token.type === "string" ||
       token.type === "identifier" ||
-      token.type === "indexed_access"
+      token.type === "indexed_access" ||
+      token.type === "function_call"
     ) {
       output.push(token);
       continue;
@@ -459,6 +523,21 @@ function evaluateRpn(
       }
 
       stack.push(variables.get(normalized)!);
+      continue;
+    }
+
+    if (token.type === "function_call") {
+      const args = (token.argumentsExpressions ?? []).map((argumentExpression) =>
+        new ExpressionEvaluator().evaluate(
+          argumentExpression,
+          variables,
+          arrays,
+          matrices,
+          lineNumber
+        )
+      );
+
+      stack.push(invokeBuiltinFunction(token.value, args, lineNumber));
       continue;
     }
 
