@@ -44,26 +44,33 @@ export function getDefaultValueForType(type: VariableType): RuntimeValue {
 export function parseInputToTypedValue(
   raw: string,
   type: VariableType,
-  line: number
+  line: number,
+  targetLabel = "La entrada"
 ): RuntimeValue {
   const trimmed = raw.trim();
 
   switch (type) {
-    case "Entero":
+    case "Entero": {
       if (!/^-?\d+$/.test(trimmed)) {
         throw new Error(
-          `[Línea ${line}] La variable requiere un valor de tipo Entero.`
+          `[Línea ${line}] ${targetLabel} requiere un valor de tipo Entero. Valor recibido: "${raw}".`
         );
       }
-      return Number(trimmed);
 
-    case "Real":
-      if (!/^-?\d+(\.\d+)?$/.test(trimmed)) {
+      return Number(trimmed);
+    }
+
+    case "Real": {
+      const normalized = normalizeNumericInput(trimmed);
+
+      if (!/^-?\d+(\.\d+)?$/.test(normalized)) {
         throw new Error(
-          `[Línea ${line}] La variable requiere un valor de tipo Real.`
+          `[Línea ${line}] ${targetLabel} requiere un valor de tipo Real. Valor recibido: "${raw}".`
         );
       }
-      return Number(trimmed);
+
+      return Number(normalized);
+    }
 
     case "Cadena":
       return raw;
@@ -78,66 +85,112 @@ export function parseInputToTypedValue(
       }
 
       throw new Error(
-        `[Línea ${line}] La variable requiere un valor lógico: Verdadero o Falso.`
+        `[Línea ${line}] ${targetLabel} requiere un valor lógico: Verdadero o Falso. Valor recibido: "${raw}".`
       );
 
-    case "Caracter":
-      if (raw.length !== 1) {
+    case "Caracter": {
+      const candidate = trimmed;
+
+      if (candidate.length !== 1) {
         throw new Error(
-          `[Línea ${line}] La variable requiere un único carácter.`
+          `[Línea ${line}] ${targetLabel} requiere un único carácter. Valor recibido: "${raw}".`
         );
       }
 
-      return raw;
+      return candidate;
+    }
   }
 }
 
 export function coerceValueToType(
   value: RuntimeValue,
   type: VariableType,
-  line: number
+  line: number,
+  targetLabel = "La variable"
 ): RuntimeValue {
   switch (type) {
     case "Entero":
       if (typeof value !== "number" || !Number.isInteger(value)) {
-        throw new Error(
-          `[Línea ${line}] La variable requiere un valor de tipo Entero.`
-        );
+        throw buildRuntimeTypeError(line, targetLabel, type, value);
       }
       return value;
 
     case "Real":
       if (typeof value !== "number") {
-        throw new Error(
-          `[Línea ${line}] La variable requiere un valor de tipo Real.`
-        );
+        throw buildRuntimeTypeError(line, targetLabel, type, value);
       }
       return value;
 
     case "Cadena":
       if (typeof value !== "string") {
-        throw new Error(
-          `[Línea ${line}] La variable requiere un valor de tipo Cadena.`
-        );
+        throw buildRuntimeTypeError(line, targetLabel, type, value);
       }
       return value;
 
     case "Logico":
       if (typeof value !== "boolean") {
-        throw new Error(
-          `[Línea ${line}] La variable requiere un valor de tipo Logico.`
-        );
+        throw buildRuntimeTypeError(line, targetLabel, type, value);
       }
       return value;
 
     case "Caracter":
       if (typeof value !== "string" || value.length !== 1) {
-        throw new Error(
-          `[Línea ${line}] La variable requiere un valor de tipo Caracter.`
-        );
+        throw buildRuntimeTypeError(line, targetLabel, type, value);
       }
       return value;
   }
+}
+
+function buildRuntimeTypeError(
+  line: number,
+  targetLabel: string,
+  expectedType: VariableType,
+  value: RuntimeValue
+): Error {
+  return new Error(
+    `[Línea ${line}] ${targetLabel} requiere un valor de tipo ${expectedType}. ` +
+      `Valor recibido de tipo ${describeRuntimeValueType(value)}: ${renderRuntimeValue(value)}.`
+  );
+}
+
+function describeRuntimeValueType(value: RuntimeValue): string {
+  if (value === null) {
+    return "Nulo";
+  }
+
+  if (typeof value === "boolean") {
+    return "Logico";
+  }
+
+  if (typeof value === "number") {
+    return Number.isInteger(value) ? "Entero" : "Real";
+  }
+
+  if (typeof value === "string") {
+    return value.length === 1 ? "Caracter" : "Cadena";
+  }
+
+  return "Desconocido";
+}
+
+function renderRuntimeValue(value: RuntimeValue): string {
+  if (value === null) {
+    return "Nulo";
+  }
+
+  if (typeof value === "string") {
+    return `"${value}"`;
+  }
+
+  if (typeof value === "boolean") {
+    return value ? "Verdadero" : "Falso";
+  }
+
+  return String(value);
+}
+
+function normalizeNumericInput(value: string): string {
+  return value.replace(",", ".");
 }
 
 function removeAccents(value: string): string {
