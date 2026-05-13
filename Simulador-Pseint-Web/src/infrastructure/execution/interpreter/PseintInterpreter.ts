@@ -213,7 +213,10 @@ export class PseintInterpreter {
       }
 
       declarations.set(normalizedName, statement.variableType);
-      variables.set(normalizedName, getDefaultValueForType(statement.variableType));
+      variables.set(
+        normalizedName,
+        getDefaultValueForType(statement.variableType)
+      );
     }
   }
 
@@ -248,7 +251,11 @@ export class PseintInterpreter {
         statement.line
       );
 
-      if (typeof sizeValue !== "number" || !Number.isInteger(sizeValue) || sizeValue <= 0) {
+      if (
+        typeof sizeValue !== "number" ||
+        !Number.isInteger(sizeValue) ||
+        sizeValue <= 0
+      ) {
         throw new Error(
           `[Línea ${statement.line}] El tamaño del arreglo debe ser un entero mayor que cero.`
         );
@@ -295,7 +302,11 @@ export class PseintInterpreter {
         statement.line
       );
 
-      if (typeof rowsValue !== "number" || !Number.isInteger(rowsValue) || rowsValue <= 0) {
+      if (
+        typeof rowsValue !== "number" ||
+        !Number.isInteger(rowsValue) ||
+        rowsValue <= 0
+      ) {
         throw new Error(
           `[Línea ${statement.line}] La cantidad de filas debe ser un entero mayor que cero.`
         );
@@ -393,7 +404,12 @@ export class PseintInterpreter {
     );
 
     const parsedValue = expectedType
-      ? parseInputToTypedValue(input, expectedType, statement.line)
+      ? parseInputToTypedValue(
+          input,
+          expectedType,
+          statement.line,
+          `La entrada para "${targetLabel}"`
+        )
       : inferValue(input);
 
     this.assignTarget(
@@ -465,7 +481,9 @@ export class PseintInterpreter {
       );
     }
 
-    const branch = conditionResult ? statement.thenBranch : statement.elseBranch;
+    const branch = conditionResult
+      ? statement.thenBranch
+      : statement.elseBranch;
 
     for (const nestedStatement of branch) {
       await this.executeStatement(
@@ -873,7 +891,12 @@ export class PseintInterpreter {
     const declaredType = declarations.get(normalizedName);
 
     const finalValue = declaredType
-      ? coerceValueToType(value, declaredType, line)
+      ? coerceValueToType(
+          value,
+          declaredType,
+          line,
+          `La variable "${variableName}"`
+        )
       : value;
 
     variables.set(normalizedName, finalValue);
@@ -915,7 +938,12 @@ export class PseintInterpreter {
     const declaredType = arrayDeclarations.get(normalizedName) ?? null;
 
     const finalValue = declaredType
-      ? coerceValueToType(value, declaredType, line)
+      ? coerceValueToType(
+          value,
+          declaredType,
+          line,
+          `El elemento "${target.name}[${index}]"`
+        )
       : value;
 
     arrayValues[index - 1] = finalValue;
@@ -958,7 +986,12 @@ export class PseintInterpreter {
     const declaredType = matrixDeclarations.get(normalizedName) ?? null;
 
     const finalValue = declaredType
-      ? coerceValueToType(value, declaredType, line)
+      ? coerceValueToType(
+          value,
+          declaredType,
+          line,
+          `El elemento "${target.name}[${row},${column}]"`
+        )
       : value;
 
     matrixValues[row - 1][column - 1] = finalValue;
@@ -1077,8 +1110,12 @@ function inferValue(raw: string): RuntimeValue {
     return "";
   }
 
-  if (/^-?\d+(\.\d+)?$/.test(trimmed)) {
+  if (/^-?\d+$/.test(trimmed)) {
     return Number(trimmed);
+  }
+
+  if (/^-?\d+[.,]\d+$/.test(trimmed)) {
+    return Number(trimmed.replace(",", "."));
   }
 
   if (/^verdadero$/i.test(trimmed)) {
@@ -1089,7 +1126,7 @@ function inferValue(raw: string): RuntimeValue {
     return false;
   }
 
-  return trimmed;
+  return raw;
 }
 
 function normalizeName(name: string): string {
