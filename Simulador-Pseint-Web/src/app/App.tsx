@@ -2,14 +2,18 @@ import { useCallback, useMemo, useState } from "react";
 import { RunProgramUseCase } from "../application/use-cases/RunProgramUseCase";
 import type { ConsoleLine } from "../domain/models/ConsoleLine";
 import { PseintProgramRunner } from "../infrastructure/execution/PseintProgramRunner";
-import { defaultProgram } from "../shared/constants/defaultProgram";
+import { editorExamples } from "../shared/examples/editorExamples";
+
 import { ConsolePane } from "../ui/components/ConsolePane";
 import { EditorPane } from "../ui/components/EditorPane";
 import { Topbar } from "../ui/components/Topbar";
 import { ReactConsoleIO } from "../ui/runtime/ReactConsoleIO";
 
+const defaultExample = editorExamples[0];
+
 export default function App() {
-  const [code, setCode] = useState(defaultProgram);
+  const [selectedExampleId, setSelectedExampleId] = useState(defaultExample.id);
+  const [code, setCode] = useState(defaultExample.code);
   const [consoleLines, setConsoleLines] = useState<ConsoleLine[]>([
     {
       id: crypto.randomUUID(),
@@ -36,6 +40,19 @@ export default function App() {
   const runProgramUseCase = useMemo(() => {
     return new RunProgramUseCase(new PseintProgramRunner());
   }, []);
+
+  const errorLine = useMemo(() => {
+    const lastError = [...consoleLines]
+      .reverse()
+      .find((line) => line.kind === "error");
+
+    if (!lastError) {
+      return null;
+    }
+
+    const match = lastError.text.match(/\[Línea\s+(\d+)\]/i);
+    return match ? Number(match[1]) : null;
+  }, [consoleLines]);
 
   const handleRun = async () => {
     if (isRunning) {
@@ -64,9 +81,50 @@ export default function App() {
     setPendingVariable(null);
   };
 
+  const handleClearEditor = () => {
+    if (isRunning) {
+      return;
+    }
+
+    setCode("");
+    setSelectedExampleId("");
+  };
+
+  const handleLoadExample = (exampleId: string) => {
+    if (isRunning) {
+      return;
+    }
+
+    const example = editorExamples.find((item) => item.id === exampleId);
+
+    if (!example) {
+      return;
+    }
+
+    setSelectedExampleId(example.id);
+    setCode(example.code);
+    setConsoleLines([
+      {
+        id: crypto.randomUUID(),
+        text: `Ejemplo cargado: ${example.label}`,
+        kind: "system",
+        timestamp: getCurrentTime(),
+      },
+    ]);
+    setPendingVariable(null);
+    setInputValue("");
+  };
+
   const handleSubmitInput = () => {
     io.submitInput(inputValue);
     setInputValue("");
+  };
+
+  const handleCodeChange = (value: string) => {
+    setCode(value);
+
+    const exactMatch = editorExamples.find((example) => example.code === value);
+    setSelectedExampleId(exactMatch?.id ?? "");
   };
 
   return (
@@ -74,11 +132,19 @@ export default function App() {
       <Topbar
         onRun={handleRun}
         onClearConsole={handleClearConsole}
+        onClearEditor={handleClearEditor}
+        onLoadExample={handleLoadExample}
         isRunning={isRunning}
+        selectedExampleId={selectedExampleId}
+        examples={editorExamples}
       />
 
       <main className="workspace">
-        <EditorPane code={code} onChange={setCode} />
+        <EditorPane
+          code={code}
+          onChange={handleCodeChange}
+          errorLine={errorLine}
+        />
         <ConsolePane
           lines={consoleLines}
           pendingVariable={pendingVariable}
