@@ -31,23 +31,26 @@ export class PseintLineParser {
     }
 
     const firstLine = this.currentLine().trim();
-    const algorithmMatch = firstLine.match(/^Algoritmo\s+(.+)$/i);
+    const startMatch = firstLine.match(/^(Algoritmo|Proceso)\s+(.+)$/i);
 
-    if (!algorithmMatch) {
+    if (!startMatch) {
       throw new Error(
-        `[Línea ${this.current + 1}] El programa debe iniciar con "Algoritmo NombrePrograma".`
+        `[Línea ${this.current + 1}] El programa debe iniciar con "Algoritmo NombrePrograma" o "Proceso NombreProceso".`
       );
     }
 
-    const programName = algorithmMatch[1].trim();
+    const startKeyword = startMatch[1].trim().toLowerCase();
+    const programName = startMatch[2].trim();
+    const expectedEnd = startKeyword === "proceso" ? "FinProceso" : "FinAlgoritmo";
+
     this.current++;
 
-    const body = this.parseBlock(["FinAlgoritmo"]);
+    const body = this.parseBlock([expectedEnd]);
 
     this.skipIgnorableLines();
 
-    if (this.isAtEnd() || !/^FinAlgoritmo$/i.test(this.currentLine().trim())) {
-      throw new Error(`No se encontró la instrucción final "FinAlgoritmo".`);
+    if (this.isAtEnd() || !new RegExp(`^${expectedEnd}$`, "i").test(this.currentLine().trim())) {
+      throw new Error(`No se encontró la instrucción final "${expectedEnd}".`);
     }
 
     this.current++;
@@ -55,7 +58,7 @@ export class PseintLineParser {
 
     if (!this.isAtEnd()) {
       throw new Error(
-        `[Línea ${this.current + 1}] Hay contenido no esperado después de "FinAlgoritmo".`
+        `[Línea ${this.current + 1}] Hay contenido no esperado después de "${expectedEnd}".`
       );
     }
 
@@ -137,7 +140,7 @@ export class PseintLineParser {
         continue;
       }
 
-      if (trimmed.includes("<-")) {
+      if (hasTopLevelAssignment(trimmed)) {
         statements.push(this.parseAssignment(trimmed, this.current + 1));
         this.current++;
         continue;
@@ -504,13 +507,11 @@ export class PseintLineParser {
     const lineNumber = this.current + 1;
     const line = this.currentLine().trim();
 
-    const match = line.match(
-      /^Para\s+([a-zA-Z_]\w*)\s*<-\s*(.+?)\s+Hasta\s+(.+?)(?:\s+Con\s+Paso\s+(.+?))?\s+Hacer$/i
-    );
+    const match = line.match(/^Para\s+([a-zA-Z_]\w*)\s*(?:<-|=)\s*(.+?)\s+Hasta\s+(.+?)(?:\s+Con\s+Paso\s+(.+?))?\s+Hacer$/i);
 
     if (!match) {
       throw new Error(
-        `[Línea ${lineNumber}] Sintaxis inválida en Para. Ejemplo: Para i <- 1 Hasta 10 Con Paso 1 Hacer`
+        `[Línea ${lineNumber}] Sintaxis inválida en Para. Ejemplo: Para i <- 1 Hasta 10 Hacer o Para i = 1 Hasta 10 Hacer`
       );
     }
 
@@ -570,9 +571,17 @@ export class PseintLineParser {
       throw new Error(`[Línea ${lineNumber}] Sintaxis inválida en Leer.`);
     }
 
+    const rawTargets = splitArguments(match[1].trim());
+
+    if (rawTargets.length === 0) {
+      throw new Error(
+        `[Línea ${lineNumber}] Leer debe contener al menos una variable o destino.`
+      );
+    }
+
     return {
       type: "read",
-      target: parseTarget(match[1].trim(), lineNumber),
+      targets: rawTargets.map((rawTarget) => parseTarget(rawTarget.trim(), lineNumber)),
       line: lineNumber,
     };
   }
@@ -581,16 +590,16 @@ export class PseintLineParser {
     line: string,
     lineNumber: number
   ): AssignmentStatementNode {
-    const match = line.match(/^(.+?)\s*<-\s*(.+)$/i);
+    const parts = splitTopLevelAssignment(line);
 
-    if (!match) {
+    if (!parts) {
       throw new Error(`[Línea ${lineNumber}] Sintaxis inválida en asignación.`);
     }
 
     return {
       type: "assign",
-      target: parseTarget(match[1].trim(), lineNumber),
-      expression: match[2].trim(),
+      target: parseTarget(parts.left.trim(), lineNumber),
+      expression: parts.right.trim(),
       line: lineNumber,
     };
   }
@@ -669,6 +678,78 @@ function parseTarget(rawTarget: string, lineNumber: number): TargetNode {
     kind: "variable",
     name: rawTarget.trim(),
   };
+}
+
+function hasTopLevelAssignment(line: string): boolean {
+  return splitTopLevelAssignment(line) !== null;
+}
+
+function splitTopLevelAssignment(
+  input: string
+): { left: string; right: string } | null {
+  let inString = false;
+  let parenthesisDepth = 0;
+  let bracketDepth = 0;
+
+  for (let i = 0; i < input.length; i++) {
+    const char = input[i];
+    const next = input[i + 1];
+    const prev = input[i - 1];
+
+    if (char === '"') {
+      inString = !inString;
+      continue;
+    }
+
+    if (inString) {
+      continue;
+    }
+
+    if (char === "(") {
+      parenthesisDepth++;
+      continue;
+    }
+
+    if (char === ")") {
+      parenthesisDepth--;
+      continue;
+    }
+
+    if (char === "[") {
+      bracketDepth++;
+      continue;
+    }
+
+    if (char === "]") {
+      bracketDepth--;
+      continue;
+    }
+
+    if (parenthesisDepth !== 0 || bracketDepth !== 0) {
+      continue;
+    }
+
+    if (char === "<" && next === "-") {
+      return {
+        left: input.slice(0, i),
+        right: input.slice(i + 2),
+      };
+    }
+
+    if (
+      char === "=" &&
+      prev !== "<" &&
+      prev !== ">" &&
+      next !== "="
+    ) {
+      return {
+        left: input.slice(0, i),
+        right: input.slice(i + 1),
+      };
+    }
+  }
+
+  return null;
 }
 
 function splitArguments(input: string): string[] {
