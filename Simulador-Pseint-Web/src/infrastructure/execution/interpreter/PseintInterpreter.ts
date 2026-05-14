@@ -377,57 +377,55 @@ export class PseintInterpreter {
   }
 
   private async executeRead(
-  statement: ReadStatementNode,
-  variables: Map<string, RuntimeValue>,
-  declarations: Map<string, VariableType>,
-  arrays: Map<string, RuntimeValue[]>,
-  arrayDeclarations: Map<string, VariableType | null>,
-  matrices: Map<string, RuntimeValue[][]>,
-  matrixDeclarations: Map<string, VariableType | null>,
-  io: ProgramIOPort
-): Promise<void> {
-  for (const target of statement.targets) {
-    const targetLabel = renderTarget(
-      target,
-      variables,
-      arrays,
-      matrices,
-      statement.line
-    );
+    statement: ReadStatementNode,
+    variables: Map<string, RuntimeValue>,
+    declarations: Map<string, VariableType>,
+    arrays: Map<string, RuntimeValue[]>,
+    arrayDeclarations: Map<string, VariableType | null>,
+    matrices: Map<string, RuntimeValue[][]>,
+    matrixDeclarations: Map<string, VariableType | null>,
+    io: ProgramIOPort
+  ): Promise<void> {
+    for (const target of statement.targets) {
+      const targetLabel = renderTarget(
+        target,
+        variables,
+        arrays,
+        matrices,
+        statement.line
+      );
 
-    const input = await io.requestInput(targetLabel);
+      const input = await io.requestInput(targetLabel);
 
-    const expectedType = this.getTargetDeclaredType(
-      target,
-      declarations,
-      arrayDeclarations,
-      matrixDeclarations
-    );
+      const expectedType = this.getTargetDeclaredType(
+        target,
+        declarations,
+        arrayDeclarations,
+        matrixDeclarations
+      );
 
-    const parsedValue = expectedType
-      ? parseInputToTypedValue(
-          input,
-          expectedType,
-          statement.line,
-          `La entrada para "${targetLabel}"`
-        )
-      : inferValue(input);
+      const parsedValue = expectedType
+        ? parseInputToTypedValue(
+            input,
+            expectedType,
+            statement.line,
+            `La entrada para "${targetLabel}"`
+          )
+        : inferValue(input);
 
-    this.assignTarget(
-      target,
-      parsedValue,
-      statement.line,
-      variables,
-      declarations,
-      arrays,
-      arrayDeclarations,
-      matrices,
-      matrixDeclarations
-    );
-
-    io.print(`${targetLabel} <- ${renderValue(parsedValue)}`, "info");
+      this.assignTarget(
+        target,
+        parsedValue,
+        statement.line,
+        variables,
+        declarations,
+        arrays,
+        arrayDeclarations,
+        matrices,
+        matrixDeclarations
+      );
+    }
   }
-}
 
   private executeAssignment(
     statement: AssignmentStatementNode,
