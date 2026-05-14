@@ -63,7 +63,7 @@ export interface WriteStatementNode {
 
 export interface ReadStatementNode {
   type: "read";
-  target: TargetNode;
+  targets: TargetNode[];
   line: number;
 }
 
