@@ -377,17 +377,18 @@ export class PseintInterpreter {
   }
 
   private async executeRead(
-    statement: ReadStatementNode,
-    variables: Map<string, RuntimeValue>,
-    declarations: Map<string, VariableType>,
-    arrays: Map<string, RuntimeValue[]>,
-    arrayDeclarations: Map<string, VariableType | null>,
-    matrices: Map<string, RuntimeValue[][]>,
-    matrixDeclarations: Map<string, VariableType | null>,
-    io: ProgramIOPort
-  ): Promise<void> {
+  statement: ReadStatementNode,
+  variables: Map<string, RuntimeValue>,
+  declarations: Map<string, VariableType>,
+  arrays: Map<string, RuntimeValue[]>,
+  arrayDeclarations: Map<string, VariableType | null>,
+  matrices: Map<string, RuntimeValue[][]>,
+  matrixDeclarations: Map<string, VariableType | null>,
+  io: ProgramIOPort
+): Promise<void> {
+  for (const target of statement.targets) {
     const targetLabel = renderTarget(
-      statement.target,
+      target,
       variables,
       arrays,
       matrices,
@@ -397,7 +398,7 @@ export class PseintInterpreter {
     const input = await io.requestInput(targetLabel);
 
     const expectedType = this.getTargetDeclaredType(
-      statement.target,
+      target,
       declarations,
       arrayDeclarations,
       matrixDeclarations
@@ -413,7 +414,7 @@ export class PseintInterpreter {
       : inferValue(input);
 
     this.assignTarget(
-      statement.target,
+      target,
       parsedValue,
       statement.line,
       variables,
@@ -426,6 +427,7 @@ export class PseintInterpreter {
 
     io.print(`${targetLabel} <- ${renderValue(parsedValue)}`, "info");
   }
+}
 
   private executeAssignment(
     statement: AssignmentStatementNode,
