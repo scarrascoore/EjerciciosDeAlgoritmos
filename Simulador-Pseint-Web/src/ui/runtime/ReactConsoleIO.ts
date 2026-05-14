@@ -9,7 +9,6 @@ interface ReactConsoleIOOptions {
 export class ReactConsoleIO implements ProgramIOPort {
   private pendingResolver: ((value: string) => void) | null = null;
   private pendingVariable: string | null = null;
-
   private readonly options: ReactConsoleIOOptions;
 
   constructor(options: ReactConsoleIOOptions) {
@@ -28,8 +27,6 @@ export class ReactConsoleIO implements ProgramIOPort {
   }
 
   async requestInput(variableName: string): Promise<string> {
-    this.print(`Esperando entrada para: ${variableName}...`, "system");
-
     this.pendingVariable = variableName;
     this.options.setPendingVariable(variableName);
 
@@ -42,8 +39,6 @@ export class ReactConsoleIO implements ProgramIOPort {
     if (!this.pendingResolver || !this.pendingVariable) {
       return;
     }
-
-    this.print(`> ${value}`, "info");
 
     const resolve = this.pendingResolver;
 
