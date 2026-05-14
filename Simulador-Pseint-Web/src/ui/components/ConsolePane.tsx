@@ -58,24 +58,24 @@ export function ConsolePane({
 
         {pendingVariable && (
           <form
-            className="console__inputRow"
+            className="console__inlineInputLine"
             onSubmit={(event) => {
               event.preventDefault();
               onSubmitInput();
             }}
           >
-            <span className="console__prompt">{pendingVariable}:</span>
+            <span className="console__timestamp">
+              [{new Date().toLocaleTimeString("es-PE", { hour12: false })}]
+            </span>
+            <span className="console__inlinePrompt">{">"}</span>
             <input
               ref={inputRef}
-              className="console__input"
+              className="console__inlineInput"
               value={inputValue}
               onChange={(event) => onInputChange(event.target.value)}
               autoComplete="off"
               spellCheck={false}
             />
-            <button className="console__send" type="submit">
-              Enviar
-            </button>
           </form>
         )}
       </div>
