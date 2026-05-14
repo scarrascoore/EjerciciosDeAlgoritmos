@@ -40,6 +40,8 @@ export class ReactConsoleIO implements ProgramIOPort {
       return;
     }
 
+    this.print(`> ${value}`, "info");
+
     const resolve = this.pendingResolver;
 
     this.pendingResolver = null;
