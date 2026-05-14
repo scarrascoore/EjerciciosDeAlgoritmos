@@ -549,7 +549,7 @@ export class PseintLineParser {
       throw new Error(`[Línea ${lineNumber}] Sintaxis inválida en Escribir.`);
     }
 
-    const args = splitArguments(match[1]);
+    const args = splitWriteArguments(match[1]);
 
     if (args.length === 0) {
       throw new Error(
@@ -563,6 +563,14 @@ export class PseintLineParser {
       line: lineNumber,
     };
   }
+
+  
+
+
+
+
+
+
 
   private parseRead(line: string, lineNumber: number): ReadStatementNode {
     const match = line.match(/^Leer\s+(.+)$/i);
@@ -813,4 +821,155 @@ function splitArguments(input: string): string[] {
   }
 
   return result;
+}
+
+
+function splitWriteArguments(input: string): string[] {
+  const commaArgs = splitArguments(input);
+
+  if (commaArgs.length > 1) {
+    return commaArgs;
+  }
+
+  const adjacencyArgs = splitWriteArgumentsByAdjacency(input);
+
+  if (adjacencyArgs && adjacencyArgs.length > 1) {
+    return adjacencyArgs;
+  }
+
+  return commaArgs;
+}
+
+function splitWriteArgumentsByAdjacency(input: string): string[] | null {
+  const items: string[] = [];
+  let i = 0;
+
+  while (i < input.length) {
+    while (i < input.length && /\s/.test(input[i])) {
+      i++;
+    }
+
+    if (i >= input.length) {
+      break;
+    }
+
+    const start = i;
+    const char = input[i];
+
+    if (char === '"') {
+      i++;
+      while (i < input.length) {
+        if (input[i] === '"' && input[i - 1] !== "\\") {
+          i++;
+          break;
+        }
+        i++;
+      }
+
+      if (i > input.length) {
+        return null;
+      }
+
+      items.push(input.slice(start, i).trim());
+      continue;
+    }
+
+    if (char === "(") {
+      const end = readBalancedSegment(input, i, "(", ")");
+      if (end === -1) return null;
+
+      i = end;
+      items.push(input.slice(start, i).trim());
+      continue;
+    }
+
+    if (/[a-zA-Z_]/.test(char)) {
+      i++;
+
+      while (i < input.length && /\w/.test(input[i])) {
+        i++;
+      }
+
+      // soporta sufijos como funcion(...) o arreglo[...] o matriz[...]
+      while (true) {
+        while (i < input.length && /\s/.test(input[i])) {
+          i++;
+        }
+
+        if (input[i] === "(") {
+          const end = readBalancedSegment(input, i, "(", ")");
+          if (end === -1) return null;
+          i = end;
+          continue;
+        }
+
+        if (input[i] === "[") {
+          const end = readBalancedSegment(input, i, "[", "]");
+          if (end === -1) return null;
+          i = end;
+          continue;
+        }
+
+        break;
+      }
+
+      items.push(input.slice(start, i).trim());
+      continue;
+    }
+
+    if (/\d/.test(char) || (char === "-" && /\d/.test(input[i + 1] ?? ""))) {
+      i++;
+
+      while (i < input.length && /[\d.]/.test(input[i])) {
+        i++;
+      }
+
+      items.push(input.slice(start, i).trim());
+      continue;
+    }
+
+    // si aparece un operador suelto a nivel superior, no intentamos partir por espacios
+    if ("+-*/%=<>".includes(char)) {
+      return null;
+    }
+
+    return null;
+  }
+
+  return items.length > 0 ? items : null;
+}
+
+function readBalancedSegment(
+  input: string,
+  startIndex: number,
+  openChar: string,
+  closeChar: string
+): number {
+  let depth = 0;
+  let inString = false;
+  let i = startIndex;
+
+  while (i < input.length) {
+    const char = input[i];
+
+    if (char === '"' && input[i - 1] !== "\\") {
+      inString = !inString;
+      i++;
+      continue;
+    }
+
+    if (!inString && char === openChar) {
+      depth++;
+    } else if (!inString && char === closeChar) {
+      depth--;
+
+      if (depth === 0) {
+        return i + 1;
+      }
+    }
+
+    i++;
+  }
+
+  return -1;
 }
