@@ -340,8 +340,41 @@ button {
   border-radius: 999px;
 }
 
+
+.console__inlineInputLine {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: "Cascadia Code", "Consolas", monospace;
+  color: #e2e8f0;
+  margin-top: 2px;
+}
+
+.console__inlinePrompt {
+  color: #f8fafc;
+  font-weight: 700;
+}
+
+.console__inlineInput {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #e2e8f0;
+  font: inherit;
+  caret-color: #f8fafc;
+  padding: 0;
+}
+
+.console__inlineInput::placeholder {
+  color: transparent;
+}
+
+
 @media (max-width: 1100px) {
   .topbar__controls {
     justify-content: flex-start;
   }
 }
+
