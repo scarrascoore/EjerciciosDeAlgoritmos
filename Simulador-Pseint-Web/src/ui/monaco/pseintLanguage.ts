@@ -3,6 +3,8 @@ import * as MonacoEditor from "monaco-editor";
 const KEYWORDS = [
   "Algoritmo",
   "FinAlgoritmo",
+  "Proceso",
+  "FinProceso",
   "Definir",
   "Como",
   "Escribir",
