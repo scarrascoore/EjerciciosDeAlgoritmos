@@ -1,23 +1,18 @@
-import type { EditorExample } from "../../shared/examples/editorExamples";
 
 interface TopbarProps {
   onRun: () => void;
+  onStop: () => void;
   onClearConsole: () => void;
   onClearEditor: () => void;
-  onLoadExample: (exampleId: string) => void;
   isRunning: boolean;
-  selectedExampleId: string;
-  examples: EditorExample[];
 }
 
 export function Topbar({
   onRun,
+  onStop,
   onClearConsole,
   onClearEditor,
-  onLoadExample,
   isRunning,
-  selectedExampleId,
-  examples,
 }: TopbarProps) {
   return (
     <header className="topbar">
@@ -32,22 +27,6 @@ export function Topbar({
       </div>
 
       <div className="topbar__controls">
-        <label className="topbar__selectWrap">
-          <span className="topbar__selectLabel">Ejemplos</span>
-          <select
-            className="topbar__select"
-            value={selectedExampleId}
-            onChange={(event) => onLoadExample(event.target.value)}
-            disabled={isRunning}
-          >
-            {examples.map((example) => (
-              <option key={example.id} value={example.id}>
-                {example.label}
-              </option>
-            ))}
-          </select>
-        </label>
-
         <div className="topbar__actions">
           <button
             className="btn btn--secondary"
@@ -71,6 +50,14 @@ export function Topbar({
             disabled={isRunning}
           >
             {isRunning ? "Ejecutando..." : "Ejecutar"}
+          </button>
+
+          <button
+            className="btn btn--danger"
+            onClick={onStop}
+            disabled={!isRunning}
+          >
+            Detener
           </button>
         </div>
 
