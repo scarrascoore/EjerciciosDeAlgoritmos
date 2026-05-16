@@ -1,4 +1,3 @@
-
 interface TopbarProps {
   onRun: () => void;
   onStop: () => void;
@@ -44,21 +43,15 @@ export function Topbar({
             Reiniciar consola
           </button>
 
-          <button
-            className="btn btn--primary"
-            onClick={onRun}
-            disabled={isRunning}
-          >
-            {isRunning ? "Ejecutando..." : "Ejecutar"}
-          </button>
-
-          <button
-            className="btn btn--danger"
-            onClick={onStop}
-            disabled={!isRunning}
-          >
-            Detener
-          </button>
+          {!isRunning ? (
+            <button className="btn btn--primary" onClick={onRun}>
+              Ejecutar
+            </button>
+          ) : (
+            <button className="btn btn--danger" onClick={onStop}>
+              Detener
+            </button>
+          )}
         </div>
 
         <div className={`run-indicator ${isRunning ? "is-running" : ""}`}>
