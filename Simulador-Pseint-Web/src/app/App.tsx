@@ -1,19 +1,18 @@
-import { useCallback, useMemo, useState } from "react";
+import { useRef, useState } from "react";
 import { RunProgramUseCase } from "../application/use-cases/RunProgramUseCase";
 import type { ConsoleLine } from "../domain/models/ConsoleLine";
 import { PseintProgramRunner } from "../infrastructure/execution/PseintProgramRunner";
-import { editorExamples } from "../shared/examples/editorExamples";
-
 import { ConsolePane } from "../ui/components/ConsolePane";
 import { EditorPane } from "../ui/components/EditorPane";
 import { Topbar } from "../ui/components/Topbar";
 import { ReactConsoleIO } from "../ui/runtime/ReactConsoleIO";
 
-const defaultExample = editorExamples[0];
+const initialCode = `Algoritmo MiPrimerPrograma
+  Escribir "Hola mundo"
+FinAlgoritmo`;
 
 export default function App() {
-  const [selectedExampleId, setSelectedExampleId] = useState(defaultExample.id);
-  const [code, setCode] = useState(defaultExample.code);
+  const [code, setCode] = useState(initialCode);
   const [consoleLines, setConsoleLines] = useState<ConsoleLine[]>([
     {
       id: crypto.randomUUID(),
@@ -26,22 +25,15 @@ export default function App() {
   const [inputValue, setInputValue] = useState("");
   const [isRunning, setIsRunning] = useState(false);
 
-  const appendLine = useCallback((line: ConsoleLine) => {
-    setConsoleLines((previous) => [...previous, line]);
-  }, []);
+  const runCounterRef = useRef(0);
+  const activeRunIdRef = useRef<number | null>(null);
+  const currentIoRef = useRef<ReactConsoleIO | null>(null);
 
-  const io = useMemo(() => {
-    return new ReactConsoleIO({
-      appendLine,
-      setPendingVariable,
-    });
-  }, [appendLine]);
+  const runProgramUseCaseRef = useRef(
+    new RunProgramUseCase(new PseintProgramRunner())
+  );
 
-  const runProgramUseCase = useMemo(() => {
-    return new RunProgramUseCase(new PseintProgramRunner());
-  }, []);
-
-  const errorLine = useMemo(() => {
+  const errorLine = (() => {
     const lastError = [...consoleLines]
       .reverse()
       .find((line) => line.kind === "error");
@@ -52,7 +44,7 @@ export default function App() {
 
     const match = lastError.text.match(/\[Línea\s+(\d+)\]/i);
     return match ? Number(match[1]) : null;
-  }, [consoleLines]);
+  })();
 
   const handleRun = async () => {
     if (isRunning) {
@@ -64,11 +56,62 @@ export default function App() {
     setPendingVariable(null);
     setIsRunning(true);
 
+    const runId = ++runCounterRef.current;
+    activeRunIdRef.current = runId;
+
+    const io = new ReactConsoleIO({
+      appendLine: (line) => {
+        if (activeRunIdRef.current !== runId) {
+          return;
+        }
+
+        setConsoleLines((previous) => [...previous, line]);
+      },
+      setPendingVariable: (value) => {
+        if (activeRunIdRef.current !== runId) {
+          return;
+        }
+
+        setPendingVariable(value);
+      },
+      shouldAcceptIO: () => activeRunIdRef.current === runId,
+    });
+
+    currentIoRef.current = io;
+
     try {
-      await runProgramUseCase.execute(code, io);
+      await runProgramUseCaseRef.current.execute(code, io);
     } finally {
-      setIsRunning(false);
+      if (activeRunIdRef.current === runId) {
+        activeRunIdRef.current = null;
+        currentIoRef.current = null;
+        setPendingVariable(null);
+        setIsRunning(false);
+      }
     }
+  };
+
+  const handleStop = () => {
+    if (!isRunning) {
+      return;
+    }
+
+    currentIoRef.current?.stop();
+    activeRunIdRef.current = null;
+    currentIoRef.current = null;
+    setPendingVariable(null);
+    setInputValue("");
+    setIsRunning(false);
+
+    setConsoleLines((previous) => [
+      ...previous,
+      {
+        id: crypto.randomUUID(),
+        text: "Ejecución detenida por el usuario.",
+        kind: "error",
+        timestamp: getCurrentTime(),
+      },
+    ]);
   };
 
   const handleClearConsole = () => {
@@ -87,62 +130,27 @@ export default function App() {
     }
 
     setCode("");
-    setSelectedExampleId("");
-  };
-
-  const handleLoadExample = (exampleId: string) => {
-    if (isRunning) {
-      return;
-    }
-
-    const example = editorExamples.find((item) => item.id === exampleId);
-
-    if (!example) {
-      return;
-    }
-
-    setSelectedExampleId(example.id);
-    setCode(example.code);
-    setConsoleLines([
-      {
-        id: crypto.randomUUID(),
-        text: `Ejemplo cargado: ${example.label}`,
-        kind: "system",
-        timestamp: getCurrentTime(),
-      },
-    ]);
-    setPendingVariable(null);
-    setInputValue("");
   };
 
   const handleSubmitInput = () => {
-    io.submitInput(inputValue);
+    currentIoRef.current?.submitInput(inputValue);
     setInputValue("");
-  };
-
-  const handleCodeChange = (value: string) => {
-    setCode(value);
-
-    const exactMatch = editorExamples.find((example) => example.code === value);
-    setSelectedExampleId(exactMatch?.id ?? "");
   };
 
   return (
     <div className="app-shell">
       <Topbar
         onRun={handleRun}
+        onStop={handleStop}
         onClearConsole={handleClearConsole}
         onClearEditor={handleClearEditor}
-        onLoadExample={handleLoadExample}
         isRunning={isRunning}
-        selectedExampleId={selectedExampleId}
-        examples={editorExamples}
       />
 
       <main className="workspace">
         <EditorPane
           code={code}
-          onChange={handleCodeChange}
+          onChange={setCode}
           errorLine={errorLine}
         />
         <ConsolePane
