@@ -1,7 +1,9 @@
-import { useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { RunProgramUseCase } from "../application/use-cases/RunProgramUseCase";
 import type { ConsoleLine } from "../domain/models/ConsoleLine";
 import { PseintProgramRunner } from "../infrastructure/execution/PseintProgramRunner";
+import { clearEditorState, loadEditorState, saveEditorState } from "../shared/storage/editorPersistence";
+import { extractProgramName } from "../shared/utils/programMetadata";
 import { ConsolePane } from "../ui/components/ConsolePane";
 import { EditorPane } from "../ui/components/EditorPane";
 import { Topbar } from "../ui/components/Topbar";
@@ -12,11 +14,14 @@ const initialCode = `Algoritmo MiPrimerPrograma
 FinAlgoritmo`;
 
 export default function App() {
-  const [code, setCode] = useState(initialCode);
+  const restoredState = useMemo(() => loadEditorState(), []);
+  const [code, setCode] = useState(restoredState?.code ?? initialCode);
   const [consoleLines, setConsoleLines] = useState<ConsoleLine[]>([
     {
       id: crypto.randomUUID(),
-      text: 'Simulador listo. Presiona "Ejecutar".',
+      text: restoredState
+        ? `Se restauró el archivo local: ${restoredState.programName}`
+        : 'Simulador listo. Presiona "Ejecutar".',
       kind: "info",
       timestamp: getCurrentTime(),
     },
@@ -25,6 +30,7 @@ export default function App() {
   const [inputValue, setInputValue] = useState("");
   const [isRunning, setIsRunning] = useState(false);
 
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const runCounterRef = useRef(0);
   const activeRunIdRef = useRef<number | null>(null);
   const currentIoRef = useRef<ReactConsoleIO | null>(null);
@@ -32,6 +38,13 @@ export default function App() {
   const runProgramUseCaseRef = useRef(
     new RunProgramUseCase(new PseintProgramRunner())
   );
+
+  useEffect(() => {
+    saveEditorState({
+      code,
+      programName: extractProgramName(code),
+    });
+  }, [code]);
 
   const errorLine = (() => {
     const lastError = [...consoleLines]
@@ -124,12 +137,121 @@ export default function App() {
     setPendingVariable(null);
   };
 
-  const handleClearEditor = () => {
+  const handleNewFile = () => {
     if (isRunning) {
       return;
     }
 
-    setCode("");
+    const newCode = `Algoritmo NuevoArchivo
+  Escribir "Hola mundo"
+FinAlgoritmo`;
+
+    setCode(newCode);
+    clearEditorState();
+    saveEditorState({
+      code: newCode,
+      programName: extractProgramName(newCode),
+    });
+
+    setConsoleLines([
+      {
+        id: crypto.randomUUID(),
+        text: "Nuevo archivo creado.",
+        kind: "system",
+        timestamp: getCurrentTime(),
+      },
+    ]);
+    setInputValue("");
+    setPendingVariable(null);
+  };
+
+  const handleExportFile = () => {
+    if (isRunning) {
+      return;
+    }
+
+    try {
+      const programName = extractProgramName(code);
+      const blob = new Blob([code], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `${programName}.psc`;
+      anchor.click();
+
+      URL.revokeObjectURL(url);
+
+      setConsoleLines((previous) => [
+        ...previous,
+        {
+          id: crypto.randomUUID(),
+          text: `Archivo exportado: ${programName}.psc`,
+          kind: "system",
+          timestamp: getCurrentTime(),
+        },
+      ]);
+    } catch {
+      setConsoleLines((previous) => [
+        ...previous,
+        {
+          id: crypto.randomUUID(),
+          text: "No se pudo exportar el archivo.",
+          kind: "error",
+          timestamp: getCurrentTime(),
+        },
+      ]);
+    }
+  };
+
+  const handleImportFileClick = () => {
+    if (isRunning) {
+      return;
+    }
+
+    fileInputRef.current?.click();
+  };
+
+  const handleImportFileChange = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    try {
+      const text = await file.text();
+
+      setCode(text);
+      saveEditorState({
+        code: text,
+        programName: extractProgramName(text),
+      });
+
+      setConsoleLines((previous) => [
+        ...previous,
+        {
+          id: crypto.randomUUID(),
+          text: `Archivo importado: ${file.name}`,
+          kind: "system",
+          timestamp: getCurrentTime(),
+        },
+      ]);
+    } catch {
+      setConsoleLines((previous) => [
+        ...previous,
+        {
+          id: crypto.randomUUID(),
+          text: "No se pudo importar el archivo seleccionado.",
+          kind: "error",
+          timestamp: getCurrentTime(),
+        },
+      ]);
+    } finally {
+      event.target.value = "";
+    }
   };
 
   const handleSubmitInput = () => {
@@ -143,8 +265,18 @@ export default function App() {
         onRun={handleRun}
         onStop={handleStop}
         onClearConsole={handleClearConsole}
-        onClearEditor={handleClearEditor}
+        onNewFile={handleNewFile}
+        onImportFile={handleImportFileClick}
+        onExportFile={handleExportFile}
         isRunning={isRunning}
+      />
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".psc,.txt"
+        style={{ display: "none" }}
+        onChange={handleImportFileChange}
       />
 
       <main className="workspace">
