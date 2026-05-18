@@ -2,7 +2,9 @@ interface TopbarProps {
   onRun: () => void;
   onStop: () => void;
   onClearConsole: () => void;
-  onClearEditor: () => void;
+  onNewFile: () => void;
+  onImportFile: () => void;
+  onExportFile: () => void;
   isRunning: boolean;
 }
 
@@ -10,7 +12,9 @@ export function Topbar({
   onRun,
   onStop,
   onClearConsole,
-  onClearEditor,
+  onNewFile,
+  onImportFile,
+  onExportFile,
   isRunning,
 }: TopbarProps) {
   return (
@@ -29,10 +33,26 @@ export function Topbar({
         <div className="topbar__actions">
           <button
             className="btn btn--secondary"
-            onClick={onClearEditor}
+            onClick={onNewFile}
             disabled={isRunning}
           >
-            Limpiar editor
+            Nuevo archivo
+          </button>
+
+          <button
+            className="btn btn--secondary"
+            onClick={onImportFile}
+            disabled={isRunning}
+          >
+            Importar
+          </button>
+
+          <button
+            className="btn btn--secondary"
+            onClick={onExportFile}
+            disabled={isRunning}
+          >
+            Exportar
           </button>
 
           <button
