@@ -1,5 +1,6 @@
 import type { ProgramIOPort } from "../ports/ProgramIOPort";
 import type { ProgramRunnerPort } from "../ports/ProgramRunnerPort";
+import type { ExecutionSignal } from "../../shared/execution/ExecutionSignal";
 
 export class RunProgramUseCase {
   private readonly runner: ProgramRunnerPort;
@@ -8,12 +9,11 @@ export class RunProgramUseCase {
     this.runner = runner;
   }
 
-  async execute(code: string, io: ProgramIOPort): Promise<void> {
-    if (!code.trim()) {
-      io.print("No hay código para ejecutar.", "error");
-      return;
-    }
-
-    await this.runner.run(code, io);
+  async execute(
+    code: string,
+    io: ProgramIOPort,
+    signal?: ExecutionSignal
+  ): Promise<void> {
+    await this.runner.run(code, io, signal);
   }
 }
