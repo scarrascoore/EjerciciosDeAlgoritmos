@@ -1,5 +1,4 @@
 import type { ProgramIOPort } from "../../../application/ports/ProgramIOPort";
-import type { ExecutionSignal } from "../../../shared/execution/ExecutionSignal";
 import type {
   ArrayElementTargetNode,
   AssignmentStatementNode,
@@ -24,6 +23,7 @@ import {
   getDefaultValueForType,
   parseInputToTypedValue,
 } from "../../../domain/models/VariableType";
+import type { ExecutionSignal } from "../../../shared/execution/ExecutionSignal";
 import { ExpressionEvaluator } from "./ExpressionEvaluator";
 
 const MAX_LOOP_ITERATIONS = 10000;
@@ -31,11 +31,11 @@ const MAX_LOOP_ITERATIONS = 10000;
 export class PseintInterpreter {
   private readonly evaluator = new ExpressionEvaluator();
 
-  private throwIfCancelled(signal?: ExecutionSignal): void {
-    signal?.throwIfCancelled();
-  }
-
-  async execute(program: ProgramNode, io: ProgramIOPort, signal?: ExecutionSignal): Promise<void> {
+  async execute(
+    program: ProgramNode,
+    io: ProgramIOPort,
+    signal?: ExecutionSignal
+  ): Promise<void> {
     const variables = new Map<string, RuntimeValue>();
     const declarations = new Map<string, VariableType>();
     const arrays = new Map<string, RuntimeValue[]>();
@@ -66,18 +66,23 @@ export class PseintInterpreter {
     io.print("Ejecución finalizada con éxito.", "system");
   }
 
-private async executeStatement(
-  statement: StatementNode,
-  variables: Map<string, RuntimeValue>,
-  declarations: Map<string, VariableType>,
-  arrays: Map<string, RuntimeValue[]>,
-  arrayDeclarations: Map<string, VariableType | null>,
-  matrices: Map<string, RuntimeValue[][]>,
-  matrixDeclarations: Map<string, VariableType | null>,
-  io: ProgramIOPort,
-  signal?: ExecutionSignal
-): Promise<void> {
+  private throwIfCancelled(signal?: ExecutionSignal): void {
+    signal?.throwIfCancelled();
+  }
+
+  private async executeStatement(
+    statement: StatementNode,
+    variables: Map<string, RuntimeValue>,
+    declarations: Map<string, VariableType>,
+    arrays: Map<string, RuntimeValue[]>,
+    arrayDeclarations: Map<string, VariableType | null>,
+    matrices: Map<string, RuntimeValue[][]>,
+    matrixDeclarations: Map<string, VariableType | null>,
+    io: ProgramIOPort,
+    signal?: ExecutionSignal
+  ): Promise<void> {
     this.throwIfCancelled(signal);
+
     switch (statement.type) {
       case "define":
         this.executeDefine(
@@ -116,7 +121,8 @@ private async executeStatement(
           arrayDeclarations,
           matrices,
           matrixDeclarations,
-          io
+          io,
+          signal
         );
         return;
 
@@ -141,7 +147,8 @@ private async executeStatement(
           arrayDeclarations,
           matrices,
           matrixDeclarations,
-          io
+          io,
+          signal
         );
         return;
 
@@ -154,7 +161,8 @@ private async executeStatement(
           arrayDeclarations,
           matrices,
           matrixDeclarations,
-          io
+          io,
+          signal
         );
         return;
 
@@ -167,7 +175,8 @@ private async executeStatement(
           arrayDeclarations,
           matrices,
           matrixDeclarations,
-          io
+          io,
+          signal
         );
         return;
 
@@ -180,7 +189,8 @@ private async executeStatement(
           arrayDeclarations,
           matrices,
           matrixDeclarations,
-          io
+          io,
+          signal
         );
         return;
 
@@ -193,7 +203,8 @@ private async executeStatement(
           arrayDeclarations,
           matrices,
           matrixDeclarations,
-          io
+          io,
+          signal
         );
         return;
     }
@@ -396,9 +407,12 @@ private async executeStatement(
     arrayDeclarations: Map<string, VariableType | null>,
     matrices: Map<string, RuntimeValue[][]>,
     matrixDeclarations: Map<string, VariableType | null>,
-    io: ProgramIOPort
+    io: ProgramIOPort,
+    signal?: ExecutionSignal
   ): Promise<void> {
     for (const target of statement.targets) {
+      this.throwIfCancelled(signal);
+
       const targetLabel = renderTarget(
         target,
         variables,
@@ -408,6 +422,8 @@ private async executeStatement(
       );
 
       const input = await io.requestInput(targetLabel);
+
+      this.throwIfCancelled(signal);
 
       const expectedType = this.getTargetDeclaredType(
         target,
@@ -477,7 +493,8 @@ private async executeStatement(
     arrayDeclarations: Map<string, VariableType | null>,
     matrices: Map<string, RuntimeValue[][]>,
     matrixDeclarations: Map<string, VariableType | null>,
-    io: ProgramIOPort
+    io: ProgramIOPort,
+    signal?: ExecutionSignal
   ): Promise<void> {
     const conditionResult = this.evaluator.evaluate(
       statement.condition,
@@ -498,6 +515,8 @@ private async executeStatement(
       : statement.elseBranch;
 
     for (const nestedStatement of branch) {
+      this.throwIfCancelled(signal);
+
       await this.executeStatement(
         nestedStatement,
         variables,
@@ -506,7 +525,8 @@ private async executeStatement(
         arrayDeclarations,
         matrices,
         matrixDeclarations,
-        io
+        io,
+        signal
       );
     }
   }
@@ -519,7 +539,8 @@ private async executeStatement(
     arrayDeclarations: Map<string, VariableType | null>,
     matrices: Map<string, RuntimeValue[][]>,
     matrixDeclarations: Map<string, VariableType | null>,
-    io: ProgramIOPort
+    io: ProgramIOPort,
+    signal?: ExecutionSignal
   ): Promise<void> {
     const baseValue = this.evaluator.evaluate(
       statement.expression,
@@ -541,6 +562,8 @@ private async executeStatement(
 
         if (valuesAreEqual(baseValue, caseValue)) {
           for (const nestedStatement of currentCase.body) {
+            this.throwIfCancelled(signal);
+
             await this.executeStatement(
               nestedStatement,
               variables,
@@ -549,7 +572,8 @@ private async executeStatement(
               arrayDeclarations,
               matrices,
               matrixDeclarations,
-              io
+              io,
+              signal
             );
           }
           return;
@@ -558,6 +582,8 @@ private async executeStatement(
     }
 
     for (const nestedStatement of statement.defaultBranch) {
+      this.throwIfCancelled(signal);
+
       await this.executeStatement(
         nestedStatement,
         variables,
@@ -566,7 +592,8 @@ private async executeStatement(
         arrayDeclarations,
         matrices,
         matrixDeclarations,
-        io
+        io,
+        signal
       );
     }
   }
@@ -579,11 +606,14 @@ private async executeStatement(
     arrayDeclarations: Map<string, VariableType | null>,
     matrices: Map<string, RuntimeValue[][]>,
     matrixDeclarations: Map<string, VariableType | null>,
-    io: ProgramIOPort
+    io: ProgramIOPort,
+    signal?: ExecutionSignal
   ): Promise<void> {
     let iterations = 0;
 
     while (true) {
+      this.throwIfCancelled(signal);
+
       const conditionResult = this.evaluator.evaluate(
         statement.condition,
         variables,
@@ -611,6 +641,8 @@ private async executeStatement(
       }
 
       for (const nestedStatement of statement.body) {
+        this.throwIfCancelled(signal);
+
         await this.executeStatement(
           nestedStatement,
           variables,
@@ -619,7 +651,8 @@ private async executeStatement(
           arrayDeclarations,
           matrices,
           matrixDeclarations,
-          io
+          io,
+          signal
         );
       }
     }
@@ -633,7 +666,8 @@ private async executeStatement(
     arrayDeclarations: Map<string, VariableType | null>,
     matrices: Map<string, RuntimeValue[][]>,
     matrixDeclarations: Map<string, VariableType | null>,
-    io: ProgramIOPort
+    io: ProgramIOPort,
+    signal?: ExecutionSignal
   ): Promise<void> {
     const startValue = this.evaluator.evaluate(
       statement.startExpression,
@@ -701,6 +735,8 @@ private async executeStatement(
     );
 
     while (true) {
+      this.throwIfCancelled(signal);
+
       const currentValue = ensureNumber(
         variables.get(variableName),
         statement.line,
@@ -723,6 +759,8 @@ private async executeStatement(
       }
 
       for (const nestedStatement of statement.body) {
+        this.throwIfCancelled(signal);
+
         await this.executeStatement(
           nestedStatement,
           variables,
@@ -731,7 +769,8 @@ private async executeStatement(
           arrayDeclarations,
           matrices,
           matrixDeclarations,
-          io
+          io,
+          signal
         );
       }
 
@@ -754,8 +793,7 @@ private async executeStatement(
       );
     }
   }
-  
-  
+
   private async executeRepeatUntil(
     statement: RepeatUntilStatementNode,
     variables: Map<string, RuntimeValue>,
@@ -764,11 +802,14 @@ private async executeStatement(
     arrayDeclarations: Map<string, VariableType | null>,
     matrices: Map<string, RuntimeValue[][]>,
     matrixDeclarations: Map<string, VariableType | null>,
-    io: ProgramIOPort
+    io: ProgramIOPort,
+    signal?: ExecutionSignal
   ): Promise<void> {
     let iterations = 0;
 
     while (true) {
+      this.throwIfCancelled(signal);
+
       iterations++;
 
       if (iterations > MAX_LOOP_ITERATIONS) {
@@ -778,6 +819,8 @@ private async executeStatement(
       }
 
       for (const nestedStatement of statement.body) {
+        this.throwIfCancelled(signal);
+
         await this.executeStatement(
           nestedStatement,
           variables,
@@ -786,9 +829,12 @@ private async executeStatement(
           arrayDeclarations,
           matrices,
           matrixDeclarations,
-          io
+          io,
+          signal
         );
       }
+
+      this.throwIfCancelled(signal);
 
       const conditionResult = this.evaluator.evaluate(
         statement.condition,
