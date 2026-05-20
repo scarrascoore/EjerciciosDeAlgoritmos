@@ -1,4 +1,9 @@
 import type { RuntimeValue } from "../../../domain/models/RuntimeValue";
+import {
+  functionArgumentCountError,
+  functionArgumentTypeError,
+  lineError,
+} from "../../../shared/errors/pseintErrors";
 
 export function invokeBuiltinFunction(
   name: string,
@@ -28,23 +33,23 @@ export function invokeBuiltinFunction(
       const end = toInteger(args[2], lineNumber, name, "fin");
 
       if (start < 1 || end < 1) {
-        throw buildError(
-          `"${name}" requiere posiciones mayores o iguales a 1.`,
-          lineNumber
+        throw lineError(
+          lineNumber,
+          `La función "${name}" requiere posiciones mayores o iguales a 1.`
         );
       }
 
       if (start > end) {
-        throw buildError(
-          `"${name}" requiere que inicio sea menor o igual que fin.`,
-          lineNumber
+        throw lineError(
+          lineNumber,
+          `La función "${name}" requiere que inicio sea menor o igual que fin.`
         );
       }
 
       if (end > text.length) {
-        throw buildError(
-          `"${name}" excede la longitud de la cadena. Longitud actual: ${text.length}.`,
-          lineNumber
+        throw lineError(
+          lineNumber,
+          `La función "${name}" excede la longitud de la cadena. Longitud actual: ${text.length}.`
         );
       }
 
@@ -64,9 +69,9 @@ export function invokeBuiltinFunction(
       const max = toInteger(args[0], lineNumber, name, "maximo");
 
       if (max < 0) {
-        throw buildError(
-          `"${name}" requiere un máximo mayor o igual a 0.`,
-          lineNumber
+        throw lineError(
+          lineNumber,
+          `La función "${name}" requiere un máximo mayor o igual a 0.`
         );
       }
 
@@ -82,9 +87,9 @@ export function invokeBuiltinFunction(
       const raw = toText(args[0], lineNumber, name).trim().replace(",", ".");
 
       if (!/^-?\d+(\.\d+)?$/.test(raw)) {
-        throw buildError(
-          `"${name}" no pudo convertir el valor a número.`,
-          lineNumber
+        throw lineError(
+          lineNumber,
+          `La función "${name}" no pudo convertir el valor a número.`
         );
       }
 
@@ -93,7 +98,7 @@ export function invokeBuiltinFunction(
     }
 
     default:
-      throw buildError(`Función no soportada: "${name}".`, lineNumber);
+      throw lineError(lineNumber, `Función no soportada: "${name}".`);
   }
 }
 
@@ -104,9 +109,11 @@ function expectArgCount(
   lineNumber?: number
 ): void {
   if (args.length !== expected) {
-    throw buildError(
-      `"${functionName}" esperaba ${expected} argumento(s), pero recibió ${args.length}.`,
-      lineNumber
+    throw functionArgumentCountError(
+      lineNumber,
+      functionName,
+      expected,
+      args.length
     );
   }
 }
@@ -120,9 +127,10 @@ function toText(
     return value;
   }
 
-  throw buildError(
-    `"${functionName}" requiere una cadena como argumento.`,
-    lineNumber
+  throw functionArgumentTypeError(
+    lineNumber,
+    functionName,
+    "requiere una cadena como argumento"
   );
 }
 
@@ -135,9 +143,10 @@ function toNumber(
     return value;
   }
 
-  throw buildError(
-    `"${functionName}" requiere un valor numérico.`,
-    lineNumber
+  throw functionArgumentTypeError(
+    lineNumber,
+    functionName,
+    "requiere un valor numérico"
   );
 }
 
@@ -151,9 +160,10 @@ function toInteger(
     return value;
   }
 
-  throw buildError(
-    `"${functionName}" requiere que "${label}" sea un entero.`,
-    lineNumber
+  throw functionArgumentTypeError(
+    lineNumber,
+    functionName,
+    `requiere que "${label}" sea un entero`
   );
 }
 
@@ -165,12 +175,4 @@ function renderRuntimeValue(value: RuntimeValue): string {
 
 function normalizeName(value: string): string {
   return value.trim().toLowerCase();
-}
-
-function buildError(message: string, lineNumber?: number): Error {
-  if (!lineNumber) {
-    return new Error(message);
-  }
-
-  return new Error(`[Línea ${lineNumber}] ${message}`);
 }
