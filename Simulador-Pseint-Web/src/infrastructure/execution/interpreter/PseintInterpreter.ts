@@ -24,6 +24,7 @@ import {
   parseInputToTypedValue,
 } from "../../../domain/models/VariableType";
 import type { ExecutionSignal } from "../../../shared/execution/ExecutionSignal";
+import { lineError } from "../../../shared/errors/pseintErrors";
 import { ExpressionEvaluator } from "./ExpressionEvaluator";
 
 const MAX_LOOP_ITERATIONS = 10000;
@@ -230,8 +231,9 @@ export class PseintInterpreter {
         matrices.has(normalizedName) ||
         matrixDeclarations.has(normalizedName)
       ) {
-        throw new Error(
-          `[Línea ${statement.line}] La variable "${variable}" ya fue declarada o usada previamente.`
+        throw lineError(
+          statement.line,
+          `La variable "${variable}" ya fue declarada o usada previamente.`
         );
       }
 
@@ -260,8 +262,9 @@ export class PseintInterpreter {
       matrices.has(normalizedName) ||
       matrixDeclarations.has(normalizedName)
     ) {
-      throw new Error(
-        `[Línea ${statement.line}] La estructura "${statement.name}" ya fue dimensionada.`
+      throw lineError(
+        statement.line,
+        `La estructura "${statement.name}" ya fue dimensionada.`
       );
     }
 
@@ -279,8 +282,9 @@ export class PseintInterpreter {
         !Number.isInteger(sizeValue) ||
         sizeValue <= 0
       ) {
-        throw new Error(
-          `[Línea ${statement.line}] El tamaño del arreglo debe ser un entero mayor que cero.`
+        throw lineError(
+          statement.line,
+          "El tamaño del arreglo debe ser un entero mayor que cero."
         );
       }
 
@@ -291,8 +295,9 @@ export class PseintInterpreter {
         declarations.delete(normalizedName);
         variables.delete(normalizedName);
       } else if (variables.has(normalizedName)) {
-        throw new Error(
-          `[Línea ${statement.line}] "${statement.name}" ya se está usando como variable escalar.`
+        throw lineError(
+          statement.line,
+          `"${statement.name}" ya se está usando como variable escalar.`
         );
       }
 
@@ -330,8 +335,9 @@ export class PseintInterpreter {
         !Number.isInteger(rowsValue) ||
         rowsValue <= 0
       ) {
-        throw new Error(
-          `[Línea ${statement.line}] La cantidad de filas debe ser un entero mayor que cero.`
+        throw lineError(
+          statement.line,
+          "La cantidad de filas debe ser un entero mayor que cero."
         );
       }
 
@@ -340,8 +346,9 @@ export class PseintInterpreter {
         !Number.isInteger(columnsValue) ||
         columnsValue <= 0
       ) {
-        throw new Error(
-          `[Línea ${statement.line}] La cantidad de columnas debe ser un entero mayor que cero.`
+        throw lineError(
+          statement.line,
+          "La cantidad de columnas debe ser un entero mayor que cero."
         );
       }
 
@@ -352,8 +359,9 @@ export class PseintInterpreter {
         declarations.delete(normalizedName);
         variables.delete(normalizedName);
       } else if (variables.has(normalizedName)) {
-        throw new Error(
-          `[Línea ${statement.line}] "${statement.name}" ya se está usando como variable escalar.`
+        throw lineError(
+          statement.line,
+          `"${statement.name}" ya se está usando como variable escalar.`
         );
       }
 
@@ -371,8 +379,9 @@ export class PseintInterpreter {
       return;
     }
 
-    throw new Error(
-      `[Línea ${statement.line}] Solo se soportan arreglos de 1 dimensión o matrices de 2 dimensiones.`
+    throw lineError(
+      statement.line,
+      "Solo se soportan arreglos de 1 dimensión o matrices de 2 dimensiones."
     );
   }
 
@@ -505,8 +514,9 @@ export class PseintInterpreter {
     );
 
     if (typeof conditionResult !== "boolean") {
-      throw new Error(
-        `[Línea ${statement.line}] La condición del Si debe devolver Verdadero o Falso.`
+      throw lineError(
+        statement.line,
+        "La condición del Si debe devolver Verdadero o Falso."
       );
     }
 
@@ -623,8 +633,9 @@ export class PseintInterpreter {
       );
 
       if (typeof conditionResult !== "boolean") {
-        throw new Error(
-          `[Línea ${statement.line}] La condición del Mientras debe devolver Verdadero o Falso.`
+        throw lineError(
+          statement.line,
+          "La condición del Mientras debe devolver Verdadero o Falso."
         );
       }
 
@@ -635,8 +646,9 @@ export class PseintInterpreter {
       iterations++;
 
       if (iterations > MAX_LOOP_ITERATIONS) {
-        throw new Error(
-          `[Línea ${statement.line}] Se superó el límite de ${MAX_LOOP_ITERATIONS} iteraciones. Posible bucle infinito.`
+        throw lineError(
+          statement.line,
+          `Se superó el límite de ${MAX_LOOP_ITERATIONS} iteraciones. Posible bucle infinito.`
         );
       }
 
@@ -714,9 +726,7 @@ export class PseintInterpreter {
     );
 
     if (stepNumber === 0) {
-      throw new Error(
-        `[Línea ${statement.line}] El paso del Para no puede ser cero.`
-      );
+      throw lineError(statement.line, "El paso del Para no puede ser cero.");
     }
 
     const variableName = normalizeName(statement.variable);
@@ -753,8 +763,9 @@ export class PseintInterpreter {
       iterations++;
 
       if (iterations > MAX_LOOP_ITERATIONS) {
-        throw new Error(
-          `[Línea ${statement.line}] Se superó el límite de ${MAX_LOOP_ITERATIONS} iteraciones en el Para. Posible bucle infinito.`
+        throw lineError(
+          statement.line,
+          `Se superó el límite de ${MAX_LOOP_ITERATIONS} iteraciones en el Para. Posible bucle infinito.`
         );
       }
 
@@ -813,8 +824,9 @@ export class PseintInterpreter {
       iterations++;
 
       if (iterations > MAX_LOOP_ITERATIONS) {
-        throw new Error(
-          `[Línea ${statement.line}] Se superó el límite de ${MAX_LOOP_ITERATIONS} iteraciones en Repetir. Posible bucle infinito.`
+        throw lineError(
+          statement.line,
+          `Se superó el límite de ${MAX_LOOP_ITERATIONS} iteraciones en Repetir. Posible bucle infinito.`
         );
       }
 
@@ -845,8 +857,9 @@ export class PseintInterpreter {
       );
 
       if (typeof conditionResult !== "boolean") {
-        throw new Error(
-          `[Línea ${statement.line}] La condición de "Hasta Que" debe devolver Verdadero o Falso.`
+        throw lineError(
+          statement.line,
+          'La condición de "Hasta Que" debe devolver Verdadero o Falso.'
         );
       }
 
@@ -942,8 +955,9 @@ export class PseintInterpreter {
       matrices.has(normalizedName) ||
       matrixDeclarations.has(normalizedName)
     ) {
-      throw new Error(
-        `[Línea ${line}] "${variableName}" es una estructura indexada. Debes indicar sus índices.`
+      throw lineError(
+        line,
+        `"${variableName}" es una estructura indexada. Debes indicar sus índices.`
       );
     }
 
@@ -975,13 +989,15 @@ export class PseintInterpreter {
 
     if (!arrayValues) {
       if (matrices.has(normalizedName)) {
-        throw new Error(
-          `[Línea ${line}] La matriz "${target.name}" requiere dos índices.`
+        throw lineError(
+          line,
+          `La matriz "${target.name}" requiere dos índices.`
         );
       }
 
-      throw new Error(
-        `[Línea ${line}] El arreglo "${target.name}" no ha sido dimensionado.`
+      throw lineError(
+        line,
+        `El arreglo "${target.name}" no ha sido dimensionado.`
       );
     }
 
@@ -1022,13 +1038,15 @@ export class PseintInterpreter {
 
     if (!matrixValues) {
       if (arrays.has(normalizedName)) {
-        throw new Error(
-          `[Línea ${line}] El arreglo "${target.name}" solo admite un índice.`
+        throw lineError(
+          line,
+          `El arreglo "${target.name}" solo admite un índice.`
         );
       }
 
-      throw new Error(
-        `[Línea ${line}] La matriz "${target.name}" no ha sido dimensionada.`
+      throw lineError(
+        line,
+        `La matriz "${target.name}" no ha sido dimensionada.`
       );
     }
 
@@ -1073,22 +1091,25 @@ export class PseintInterpreter {
     );
 
     if (typeof indexValue !== "number" || !Number.isInteger(indexValue)) {
-      throw new Error(
-        `[Línea ${line}] El índice del arreglo "${arrayName}" debe ser un entero.`
+      throw lineError(
+        line,
+        `El índice del arreglo "${arrayName}" debe ser un entero.`
       );
     }
 
     const arrayValues = arrays.get(normalizeName(arrayName));
 
     if (!arrayValues) {
-      throw new Error(
-        `[Línea ${line}] El arreglo "${arrayName}" no ha sido dimensionado.`
+      throw lineError(
+        line,
+        `El arreglo "${arrayName}" no ha sido dimensionado.`
       );
     }
 
     if (indexValue < 1 || indexValue > arrayValues.length) {
-      throw new Error(
-        `[Línea ${line}] Índice fuera de rango en "${arrayName}[${indexValue}]". Rango válido: 1..${arrayValues.length}.`
+      throw lineError(
+        line,
+        `Índice fuera de rango en "${arrayName}[${indexValue}]". Rango válido: 1..${arrayValues.length}.`
       );
     }
 
@@ -1121,22 +1142,25 @@ export class PseintInterpreter {
     );
 
     if (typeof rowValue !== "number" || !Number.isInteger(rowValue)) {
-      throw new Error(
-        `[Línea ${line}] La fila de la matriz "${matrixName}" debe ser un entero.`
+      throw lineError(
+        line,
+        `La fila de la matriz "${matrixName}" debe ser un entero.`
       );
     }
 
     if (typeof columnValue !== "number" || !Number.isInteger(columnValue)) {
-      throw new Error(
-        `[Línea ${line}] La columna de la matriz "${matrixName}" debe ser un entero.`
+      throw lineError(
+        line,
+        `La columna de la matriz "${matrixName}" debe ser un entero.`
       );
     }
 
     const matrixValues = matrices.get(normalizeName(matrixName));
 
     if (!matrixValues) {
-      throw new Error(
-        `[Línea ${line}] La matriz "${matrixName}" no ha sido dimensionada.`
+      throw lineError(
+        line,
+        `La matriz "${matrixName}" no ha sido dimensionada.`
       );
     }
 
@@ -1144,14 +1168,16 @@ export class PseintInterpreter {
     const totalColumns = matrixValues[0]?.length ?? 0;
 
     if (rowValue < 1 || rowValue > totalRows) {
-      throw new Error(
-        `[Línea ${line}] Fila fuera de rango en "${matrixName}[${rowValue},${columnValue}]". Rango válido de fila: 1..${totalRows}.`
+      throw lineError(
+        line,
+        `Fila fuera de rango en "${matrixName}[${rowValue},${columnValue}]". Rango válido de fila: 1..${totalRows}.`
       );
     }
 
     if (columnValue < 1 || columnValue > totalColumns) {
-      throw new Error(
-        `[Línea ${line}] Columna fuera de rango en "${matrixName}[${rowValue},${columnValue}]". Rango válido de columna: 1..${totalColumns}.`
+      throw lineError(
+        line,
+        `Columna fuera de rango en "${matrixName}[${rowValue},${columnValue}]". Rango válido de columna: 1..${totalColumns}.`
       );
     }
 
@@ -1248,7 +1274,7 @@ function ensureNumber(
   message: string
 ): number {
   if (typeof value !== "number") {
-    throw new Error(`[Línea ${line}] ${message}`);
+    throw lineError(line, message);
   }
 
   return value;
