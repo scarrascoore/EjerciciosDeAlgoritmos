@@ -1,4 +1,5 @@
 import type { RuntimeValue } from "./RuntimeValue";
+import { typeRequirementError, lineError } from "../../shared/errors/pseintErrors";
 
 export type VariableType =
   | "Entero"
@@ -52,8 +53,9 @@ export function parseInputToTypedValue(
   switch (type) {
     case "Entero": {
       if (!/^-?\d+$/.test(trimmed)) {
-        throw new Error(
-          `[Línea ${line}] ${targetLabel} requiere un valor de tipo Entero. Valor recibido: "${raw}".`
+        throw lineError(
+          line,
+          `${targetLabel} requiere un valor de tipo Entero. Valor recibido: "${raw}".`
         );
       }
 
@@ -64,8 +66,9 @@ export function parseInputToTypedValue(
       const normalized = normalizeNumericInput(trimmed);
 
       if (!/^-?\d+(\.\d+)?$/.test(normalized)) {
-        throw new Error(
-          `[Línea ${line}] ${targetLabel} requiere un valor de tipo Real. Valor recibido: "${raw}".`
+        throw lineError(
+          line,
+          `${targetLabel} requiere un valor de tipo Real. Valor recibido: "${raw}".`
         );
       }
 
@@ -84,16 +87,18 @@ export function parseInputToTypedValue(
         return false;
       }
 
-      throw new Error(
-        `[Línea ${line}] ${targetLabel} requiere un valor lógico: Verdadero o Falso. Valor recibido: "${raw}".`
+      throw lineError(
+        line,
+        `${targetLabel} requiere un valor lógico: Verdadero o Falso. Valor recibido: "${raw}".`
       );
 
     case "Caracter": {
       const candidate = trimmed;
 
       if (candidate.length !== 1) {
-        throw new Error(
-          `[Línea ${line}] ${targetLabel} requiere un único carácter. Valor recibido: "${raw}".`
+        throw lineError(
+          line,
+          `${targetLabel} requiere un único carácter. Valor recibido: "${raw}".`
         );
       }
 
@@ -111,46 +116,64 @@ export function coerceValueToType(
   switch (type) {
     case "Entero":
       if (typeof value !== "number" || !Number.isInteger(value)) {
-        throw buildRuntimeTypeError(line, targetLabel, type, value);
+        throw typeRequirementError(
+          line,
+          targetLabel,
+          type,
+          describeRuntimeValueType(value),
+          renderRuntimeValue(value)
+        );
       }
       return value;
 
     case "Real":
       if (typeof value !== "number") {
-        throw buildRuntimeTypeError(line, targetLabel, type, value);
+        throw typeRequirementError(
+          line,
+          targetLabel,
+          type,
+          describeRuntimeValueType(value),
+          renderRuntimeValue(value)
+        );
       }
       return value;
 
     case "Cadena":
       if (typeof value !== "string") {
-        throw buildRuntimeTypeError(line, targetLabel, type, value);
+        throw typeRequirementError(
+          line,
+          targetLabel,
+          type,
+          describeRuntimeValueType(value),
+          renderRuntimeValue(value)
+        );
       }
       return value;
 
     case "Logico":
       if (typeof value !== "boolean") {
-        throw buildRuntimeTypeError(line, targetLabel, type, value);
+        throw typeRequirementError(
+          line,
+          targetLabel,
+          type,
+          describeRuntimeValueType(value),
+          renderRuntimeValue(value)
+        );
       }
       return value;
 
     case "Caracter":
       if (typeof value !== "string" || value.length !== 1) {
-        throw buildRuntimeTypeError(line, targetLabel, type, value);
+        throw typeRequirementError(
+          line,
+          targetLabel,
+          type,
+          describeRuntimeValueType(value),
+          renderRuntimeValue(value)
+        );
       }
       return value;
   }
-}
-
-function buildRuntimeTypeError(
-  line: number,
-  targetLabel: string,
-  expectedType: VariableType,
-  value: RuntimeValue
-): Error {
-  return new Error(
-    `[Línea ${line}] ${targetLabel} requiere un valor de tipo ${expectedType}. ` +
-      `Valor recibido de tipo ${describeRuntimeValueType(value)}: ${renderRuntimeValue(value)}.`
-  );
 }
 
 function describeRuntimeValueType(value: RuntimeValue): string {
