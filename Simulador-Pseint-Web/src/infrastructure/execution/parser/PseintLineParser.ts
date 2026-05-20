@@ -15,6 +15,13 @@ import type {
   WriteStatementNode,
 } from "../../../domain/ast/AstNodes";
 import { normalizeVariableTypeToken } from "../../../domain/models/VariableType";
+import {
+  invalidTargetError,
+  lineError,
+  missingTokenError,
+  syntaxError,
+  unsupportedInstructionError,
+} from "../../../shared/errors/pseintErrors";
 
 export class PseintLineParser {
   private lines: string[] = [];
@@ -27,21 +34,23 @@ export class PseintLineParser {
     this.skipIgnorableLines();
 
     if (this.isAtEnd()) {
-      throw new Error(`El código está vacío.`);
+      throw new Error("El código está vacío.");
     }
 
     const firstLine = this.currentLine().trim();
     const startMatch = firstLine.match(/^(Algoritmo|Proceso)\s+(.+)$/i);
 
     if (!startMatch) {
-      throw new Error(
-        `[Línea ${this.current + 1}] El programa debe iniciar con "Algoritmo NombrePrograma" o "Proceso NombreProceso".`
+      throw lineError(
+        this.current + 1,
+        'El programa debe iniciar con "Algoritmo NombrePrograma" o "Proceso NombreProceso".'
       );
     }
 
     const startKeyword = startMatch[1].trim().toLowerCase();
     const programName = startMatch[2].trim();
-    const expectedEnd = startKeyword === "proceso" ? "FinProceso" : "FinAlgoritmo";
+    const expectedEnd =
+      startKeyword === "proceso" ? "FinProceso" : "FinAlgoritmo";
 
     this.current++;
 
@@ -49,16 +58,20 @@ export class PseintLineParser {
 
     this.skipIgnorableLines();
 
-    if (this.isAtEnd() || !new RegExp(`^${expectedEnd}$`, "i").test(this.currentLine().trim())) {
-      throw new Error(`No se encontró la instrucción final "${expectedEnd}".`);
+    if (
+      this.isAtEnd() ||
+      !new RegExp(`^${expectedEnd}$`, "i").test(this.currentLine().trim())
+    ) {
+      throw missingTokenError(this.current + 1, expectedEnd);
     }
 
     this.current++;
     this.skipIgnorableLines();
 
     if (!this.isAtEnd()) {
-      throw new Error(
-        `[Línea ${this.current + 1}] Hay contenido no esperado después de "${expectedEnd}".`
+      throw lineError(
+        this.current + 1,
+        `Hay contenido no esperado después de "${expectedEnd}".`
       );
     }
 
@@ -146,19 +159,17 @@ export class PseintLineParser {
         continue;
       }
 
-      throw new Error(
-        `[Línea ${this.current + 1}] Instrucción no soportada todavía: "${trimmed}".`
-      );
+      throw unsupportedInstructionError(this.current + 1, trimmed);
     }
   }
 
   private parseDefine(line: string, lineNumber: number): DefineStatementNode {
-    const match = line.match(/^Definir\s+(.+)\s+Como\s+([a-zA-ZÁÉÍÓÚáéíóú]+)$/i);
+    const match = line.match(
+      /^Definir\s+(.+)\s+Como\s+([a-zA-ZÁÉÍÓÚáéíóú]+)$/i
+    );
 
     if (!match) {
-      throw new Error(
-        `[Línea ${lineNumber}] Sintaxis inválida en Definir. Ejemplo: Definir edad Como Entero`
-      );
+      throw syntaxError(lineNumber, "Definir", "Definir edad Como Entero");
     }
 
     const variablesPart = match[1].trim();
@@ -167,8 +178,9 @@ export class PseintLineParser {
     const variableType = normalizeVariableTypeToken(rawType);
 
     if (!variableType) {
-      throw new Error(
-        `[Línea ${lineNumber}] Tipo de variable no soportado: "${rawType}".`
+      throw lineError(
+        lineNumber,
+        `Tipo de variable no soportado: "${rawType}".`
       );
     }
 
@@ -178,8 +190,9 @@ export class PseintLineParser {
       .filter(Boolean);
 
     if (variables.length === 0) {
-      throw new Error(
-        `[Línea ${lineNumber}] Debes indicar al menos una variable en Definir.`
+      throw lineError(
+        lineNumber,
+        "Debes indicar al menos una variable en Definir."
       );
     }
 
@@ -187,16 +200,18 @@ export class PseintLineParser {
 
     for (const variable of variables) {
       if (!/^[a-zA-Z_]\w*$/.test(variable)) {
-        throw new Error(
-          `[Línea ${lineNumber}] Nombre de variable inválido: "${variable}".`
+        throw lineError(
+          lineNumber,
+          `Nombre de variable inválido: "${variable}".`
         );
       }
 
       const normalized = variable.toLowerCase();
 
       if (unique.has(normalized)) {
-        throw new Error(
-          `[Línea ${lineNumber}] La variable "${variable}" está repetida en la declaración.`
+        throw lineError(
+          lineNumber,
+          `La variable "${variable}" está repetida en la declaración.`
         );
       }
 
@@ -218,16 +233,15 @@ export class PseintLineParser {
     const match = line.match(/^Dimension\s+([a-zA-Z_]\w*)\s*\[\s*(.+)\s*\]$/i);
 
     if (!match) {
-      throw new Error(
-        `[Línea ${lineNumber}] Sintaxis inválida en Dimension. Ejemplo: Dimension tabla[3,4]`
-      );
+      throw syntaxError(lineNumber, "Dimension", "Dimension tabla[3,4]");
     }
 
     const rawSizes = splitArguments(match[2].trim());
 
     if (rawSizes.length < 1 || rawSizes.length > 2) {
-      throw new Error(
-        `[Línea ${lineNumber}] Dimension solo soporta arreglos de 1 dimensión o matrices de 2 dimensiones.`
+      throw lineError(
+        lineNumber,
+        "Dimension solo soporta arreglos de 1 dimensión o matrices de 2 dimensiones."
       );
     }
 
@@ -246,9 +260,7 @@ export class PseintLineParser {
     const match = line.match(/^Segun\s+(.+)\s+Hacer$/i);
 
     if (!match) {
-      throw new Error(
-        `[Línea ${lineNumber}] Sintaxis inválida en Segun. Ejemplo: Segun opcion Hacer`
-      );
+      throw syntaxError(lineNumber, "Segun", "Segun opcion Hacer");
     }
 
     const expression = match[1].trim();
@@ -262,9 +274,7 @@ export class PseintLineParser {
       this.skipIgnorableLines();
 
       if (this.isAtEnd()) {
-        throw new Error(
-          `[Línea ${lineNumber}] La estructura Segun debe cerrarse con "FinSegun".`
-        );
+        throw missingTokenError(lineNumber, "FinSegun");
       }
 
       const trimmed = this.currentLine().trim();
@@ -276,8 +286,9 @@ export class PseintLineParser {
 
       if (this.isDeOtroModoLine(trimmed)) {
         if (defaultSeen) {
-          throw new Error(
-            `[Línea ${this.current + 1}] "De Otro Modo" no puede repetirse.`
+          throw lineError(
+            this.current + 1,
+            '"De Otro Modo" no puede repetirse.'
           );
         }
 
@@ -286,15 +297,14 @@ export class PseintLineParser {
 
         defaultBranch = this.parseBlock(
           ["FinSegun"],
-          (lineText) => this.isSegunCaseLine(lineText) || this.isDeOtroModoLine(lineText)
+          (lineText) =>
+            this.isSegunCaseLine(lineText) || this.isDeOtroModoLine(lineText)
         );
 
         this.skipIgnorableLines();
 
         if (this.isAtEnd() || !/^FinSegun$/i.test(this.currentLine().trim())) {
-          throw new Error(
-            `[Línea ${lineNumber}] La rama "De Otro Modo" debe cerrarse con "FinSegun".`
-          );
+          throw missingTokenError(lineNumber, "FinSegun");
         }
 
         this.current++;
@@ -306,14 +316,16 @@ export class PseintLineParser {
         continue;
       }
 
-      throw new Error(
-        `[Línea ${this.current + 1}] Se esperaba un caso, "De Otro Modo" o "FinSegun" dentro de Segun.`
+      throw lineError(
+        this.current + 1,
+        'Se esperaba un caso, "De Otro Modo" o "FinSegun" dentro de Segun.'
       );
     }
 
     if (cases.length === 0 && defaultBranch.length === 0) {
-      throw new Error(
-        `[Línea ${lineNumber}] La estructura Segun debe tener al menos un caso o "De Otro Modo".`
+      throw lineError(
+        lineNumber,
+        'La estructura Segun debe tener al menos un caso o "De Otro Modo".'
       );
     }
 
@@ -331,15 +343,16 @@ export class PseintLineParser {
     const line = this.currentLine().trim();
 
     if (!this.isSegunCaseLine(line)) {
-      throw new Error(`[Línea ${lineNumber}] Caso inválido dentro de Segun.`);
+      throw lineError(lineNumber, "Caso inválido dentro de Segun.");
     }
 
     const rawValues = line.slice(0, -1).trim();
     const matches = splitArguments(rawValues);
 
     if (matches.length === 0) {
-      throw new Error(
-        `[Línea ${lineNumber}] El caso de Segun debe contener al menos un valor.`
+      throw lineError(
+        lineNumber,
+        "El caso de Segun debe contener al menos un valor."
       );
     }
 
@@ -347,7 +360,8 @@ export class PseintLineParser {
 
     const body = this.parseBlock(
       ["FinSegun"],
-      (lineText) => this.isSegunCaseLine(lineText) || this.isDeOtroModoLine(lineText)
+      (lineText) =>
+        this.isSegunCaseLine(lineText) || this.isDeOtroModoLine(lineText)
     );
 
     return {
@@ -362,7 +376,7 @@ export class PseintLineParser {
     const line = this.currentLine().trim();
 
     if (!/^Repetir$/i.test(line)) {
-      throw new Error(`[Línea ${lineNumber}] Sintaxis inválida en Repetir.`);
+      throw syntaxError(lineNumber, "Repetir", "Repetir");
     }
 
     this.current++;
@@ -372,33 +386,28 @@ export class PseintLineParser {
     );
 
     if (body.length === 0) {
-      throw new Error(
-        `[Línea ${lineNumber}] El bloque Repetir no puede estar vacío.`
-      );
+      throw lineError(lineNumber, "El bloque Repetir no puede estar vacío.");
     }
 
     this.skipIgnorableLines();
 
     if (this.isAtEnd()) {
-      throw new Error(
-        `[Línea ${lineNumber}] La estructura Repetir debe cerrarse con "Hasta Que condicion".`
-      );
+      throw missingTokenError(lineNumber, "Hasta Que");
     }
 
     const closingLine = this.currentLine().trim();
     const match = closingLine.match(/^Hasta\s+Que\s+(.+)$/i);
 
     if (!match) {
-      throw new Error(
-        `[Línea ${lineNumber}] La estructura Repetir debe cerrarse con "Hasta Que condicion".`
-      );
+      throw missingTokenError(lineNumber, "Hasta Que");
     }
 
     const condition = match[1].trim();
 
     if (!condition) {
-      throw new Error(
-        `[Línea ${this.current + 1}] La condición de "Hasta Que" no puede estar vacía.`
+      throw lineError(
+        this.current + 1,
+        'La condición de "Hasta Que" no puede estar vacía.'
       );
     }
 
@@ -419,8 +428,10 @@ export class PseintLineParser {
     const match = line.match(/^Si\s+(.+)\s+Entonces$/i);
 
     if (!match) {
-      throw new Error(
-        `[Línea ${lineNumber}] Sintaxis inválida en Si. Ejemplo: Si edad >= 18 Entonces`
+      throw syntaxError(
+        lineNumber,
+        "Si",
+        "Si edad >= 18 Entonces"
       );
     }
 
@@ -432,9 +443,7 @@ export class PseintLineParser {
     this.skipIgnorableLines();
 
     if (this.isAtEnd()) {
-      throw new Error(
-        `[Línea ${lineNumber}] La estructura Si no fue cerrada con "FinSi".`
-      );
+      throw missingTokenError(lineNumber, "FinSi");
     }
 
     let elseBranch: StatementNode[] = [];
@@ -447,14 +456,10 @@ export class PseintLineParser {
       this.skipIgnorableLines();
 
       if (this.isAtEnd() || !/^FinSi$/i.test(this.currentLine().trim())) {
-        throw new Error(
-          `[Línea ${lineNumber}] La rama SiNo debe cerrarse con "FinSi".`
-        );
+        throw missingTokenError(lineNumber, "FinSi");
       }
     } else if (!/^FinSi$/i.test(currentTrimmed)) {
-      throw new Error(
-        `[Línea ${this.current + 1}] Se esperaba "SiNo" o "FinSi".`
-      );
+      throw lineError(this.current + 1, 'Se esperaba "SiNo" o "FinSi".');
     }
 
     this.current++;
@@ -475,8 +480,10 @@ export class PseintLineParser {
     const match = line.match(/^Mientras\s+(.+)\s+Hacer$/i);
 
     if (!match) {
-      throw new Error(
-        `[Línea ${lineNumber}] Sintaxis inválida en Mientras. Ejemplo: Mientras i <= 10 Hacer`
+      throw syntaxError(
+        lineNumber,
+        "Mientras",
+        "Mientras i <= 10 Hacer"
       );
     }
 
@@ -488,9 +495,7 @@ export class PseintLineParser {
     this.skipIgnorableLines();
 
     if (this.isAtEnd() || !/^FinMientras$/i.test(this.currentLine().trim())) {
-      throw new Error(
-        `[Línea ${lineNumber}] La estructura Mientras debe cerrarse con "FinMientras".`
-      );
+      throw missingTokenError(lineNumber, "FinMientras");
     }
 
     this.current++;
@@ -507,11 +512,15 @@ export class PseintLineParser {
     const lineNumber = this.current + 1;
     const line = this.currentLine().trim();
 
-    const match = line.match(/^Para\s+([a-zA-Z_]\w*)\s*(?:<-|=)\s*(.+?)\s+Hasta\s+(.+?)(?:\s+Con\s+Paso\s+(.+?))?\s+Hacer$/i);
+    const match = line.match(
+      /^Para\s+([a-zA-Z_]\w*)\s*(?:<-|=)\s*(.+?)\s+Hasta\s+(.+?)(?:\s+Con\s+Paso\s+(.+?))?\s+Hacer$/i
+    );
 
     if (!match) {
-      throw new Error(
-        `[Línea ${lineNumber}] Sintaxis inválida en Para. Ejemplo: Para i <- 1 Hasta 10 Hacer o Para i = 1 Hasta 10 Hacer`
+      throw syntaxError(
+        lineNumber,
+        "Para",
+        "Para i <- 1 Hasta 10 Hacer o Para i = 1 Hasta 10 Hacer"
       );
     }
 
@@ -524,9 +533,7 @@ export class PseintLineParser {
     this.skipIgnorableLines();
 
     if (this.isAtEnd() || !/^FinPara$/i.test(this.currentLine().trim())) {
-      throw new Error(
-        `[Línea ${lineNumber}] La estructura Para debe cerrarse con "FinPara".`
-      );
+      throw missingTokenError(lineNumber, "FinPara");
     }
 
     this.current++;
@@ -546,14 +553,15 @@ export class PseintLineParser {
     const match = line.match(/^Escribir\s+(.+)$/i);
 
     if (!match) {
-      throw new Error(`[Línea ${lineNumber}] Sintaxis inválida en Escribir.`);
+      throw syntaxError(lineNumber, "Escribir", 'Escribir "Hola mundo"');
     }
 
     const args = splitWriteArguments(match[1]);
 
     if (args.length === 0) {
-      throw new Error(
-        `[Línea ${lineNumber}] Escribir debe contener al menos un argumento.`
+      throw lineError(
+        lineNumber,
+        "Escribir debe contener al menos un argumento."
       );
     }
 
@@ -564,32 +572,27 @@ export class PseintLineParser {
     };
   }
 
-  
-
-
-
-
-
-
-
   private parseRead(line: string, lineNumber: number): ReadStatementNode {
     const match = line.match(/^Leer\s+(.+)$/i);
 
     if (!match) {
-      throw new Error(`[Línea ${lineNumber}] Sintaxis inválida en Leer.`);
+      throw syntaxError(lineNumber, "Leer", "Leer variable");
     }
 
     const rawTargets = splitArguments(match[1].trim());
 
     if (rawTargets.length === 0) {
-      throw new Error(
-        `[Línea ${lineNumber}] Leer debe contener al menos una variable o destino.`
+      throw lineError(
+        lineNumber,
+        "Leer debe contener al menos una variable o destino."
       );
     }
 
     return {
       type: "read",
-      targets: rawTargets.map((rawTarget) => parseTarget(rawTarget.trim(), lineNumber)),
+      targets: rawTargets.map((rawTarget) =>
+        parseTarget(rawTarget.trim(), lineNumber)
+      ),
       line: lineNumber,
     };
   }
@@ -601,7 +604,7 @@ export class PseintLineParser {
     const parts = splitTopLevelAssignment(line);
 
     if (!parts) {
-      throw new Error(`[Línea ${lineNumber}] Sintaxis inválida en asignación.`);
+      throw syntaxError(lineNumber, "asignación", "x <- 10");
     }
 
     return {
@@ -673,13 +676,14 @@ function parseTarget(rawTarget: string, lineNumber: number): TargetNode {
       };
     }
 
-    throw new Error(
-      `[Línea ${lineNumber}] Solo se soportan accesos de una o dos dimensiones.`
+    throw lineError(
+      lineNumber,
+      "Solo se soportan accesos de una o dos dimensiones."
     );
   }
 
   if (!/^[a-zA-Z_]\w*$/.test(rawTarget)) {
-    throw new Error(`[Línea ${lineNumber}] Destino inválido: "${rawTarget}".`);
+    throw invalidTargetError(lineNumber, rawTarget);
   }
 
   return {
@@ -744,12 +748,7 @@ function splitTopLevelAssignment(
       };
     }
 
-    if (
-      char === "=" &&
-      prev !== "<" &&
-      prev !== ">" &&
-      next !== "="
-    ) {
+    if (char === "=" && prev !== "<" && prev !== ">" && next !== "=") {
       return {
         left: input.slice(0, i),
         right: input.slice(i + 1),
@@ -758,6 +757,150 @@ function splitTopLevelAssignment(
   }
 
   return null;
+}
+
+function splitWriteArguments(input: string): string[] {
+  const commaArgs = splitArguments(input);
+
+  if (commaArgs.length > 1) {
+    return commaArgs;
+  }
+
+  const adjacencyArgs = splitWriteArgumentsByAdjacency(input);
+
+  if (adjacencyArgs && adjacencyArgs.length > 1) {
+    return adjacencyArgs;
+  }
+
+  return commaArgs;
+}
+
+function splitWriteArgumentsByAdjacency(input: string): string[] | null {
+  const items: string[] = [];
+  let i = 0;
+
+  while (i < input.length) {
+    while (i < input.length && /\s/.test(input[i])) {
+      i++;
+    }
+
+    if (i >= input.length) {
+      break;
+    }
+
+    const start = i;
+    const char = input[i];
+
+    if (char === '"') {
+      i++;
+      while (i < input.length) {
+        if (input[i] === '"' && input[i - 1] !== "\\") {
+          i++;
+          break;
+        }
+        i++;
+      }
+
+      items.push(input.slice(start, i).trim());
+      continue;
+    }
+
+    if (char === "(") {
+      const end = readBalancedSegment(input, i, "(", ")");
+      if (end === -1) return null;
+
+      i = end;
+      items.push(input.slice(start, i).trim());
+      continue;
+    }
+
+    if (/[a-zA-Z_]/.test(char)) {
+      i++;
+
+      while (i < input.length && /\w/.test(input[i])) {
+        i++;
+      }
+
+      while (true) {
+        while (i < input.length && /\s/.test(input[i])) {
+          i++;
+        }
+
+        if (input[i] === "(") {
+          const end = readBalancedSegment(input, i, "(", ")");
+          if (end === -1) return null;
+          i = end;
+          continue;
+        }
+
+        if (input[i] === "[") {
+          const end = readBalancedSegment(input, i, "[", "]");
+          if (end === -1) return null;
+          i = end;
+          continue;
+        }
+
+        break;
+      }
+
+      items.push(input.slice(start, i).trim());
+      continue;
+    }
+
+    if (/\d/.test(char) || (char === "-" && /\d/.test(input[i + 1] ?? ""))) {
+      i++;
+
+      while (i < input.length && /[\d.]/.test(input[i])) {
+        i++;
+      }
+
+      items.push(input.slice(start, i).trim());
+      continue;
+    }
+
+    if ("+-*/%=<>".includes(char)) {
+      return null;
+    }
+
+    return null;
+  }
+
+  return items.length > 0 ? items : null;
+}
+
+function readBalancedSegment(
+  input: string,
+  startIndex: number,
+  openChar: string,
+  closeChar: string
+): number {
+  let depth = 0;
+  let inString = false;
+  let i = startIndex;
+
+  while (i < input.length) {
+    const char = input[i];
+
+    if (char === '"' && input[i - 1] !== "\\") {
+      inString = !inString;
+      i++;
+      continue;
+    }
+
+    if (!inString && char === openChar) {
+      depth++;
+    } else if (!inString && char === closeChar) {
+      depth--;
+
+      if (depth === 0) {
+        return i + 1;
+      }
+    }
+
+    i++;
+  }
+
+  return -1;
 }
 
 function splitArguments(input: string): string[] {
@@ -821,155 +964,4 @@ function splitArguments(input: string): string[] {
   }
 
   return result;
-}
-
-
-function splitWriteArguments(input: string): string[] {
-  const commaArgs = splitArguments(input);
-
-  if (commaArgs.length > 1) {
-    return commaArgs;
-  }
-
-  const adjacencyArgs = splitWriteArgumentsByAdjacency(input);
-
-  if (adjacencyArgs && adjacencyArgs.length > 1) {
-    return adjacencyArgs;
-  }
-
-  return commaArgs;
-}
-
-function splitWriteArgumentsByAdjacency(input: string): string[] | null {
-  const items: string[] = [];
-  let i = 0;
-
-  while (i < input.length) {
-    while (i < input.length && /\s/.test(input[i])) {
-      i++;
-    }
-
-    if (i >= input.length) {
-      break;
-    }
-
-    const start = i;
-    const char = input[i];
-
-    if (char === '"') {
-      i++;
-      while (i < input.length) {
-        if (input[i] === '"' && input[i - 1] !== "\\") {
-          i++;
-          break;
-        }
-        i++;
-      }
-
-      if (i > input.length) {
-        return null;
-      }
-
-      items.push(input.slice(start, i).trim());
-      continue;
-    }
-
-    if (char === "(") {
-      const end = readBalancedSegment(input, i, "(", ")");
-      if (end === -1) return null;
-
-      i = end;
-      items.push(input.slice(start, i).trim());
-      continue;
-    }
-
-    if (/[a-zA-Z_]/.test(char)) {
-      i++;
-
-      while (i < input.length && /\w/.test(input[i])) {
-        i++;
-      }
-
-      // soporta sufijos como funcion(...) o arreglo[...] o matriz[...]
-      while (true) {
-        while (i < input.length && /\s/.test(input[i])) {
-          i++;
-        }
-
-        if (input[i] === "(") {
-          const end = readBalancedSegment(input, i, "(", ")");
-          if (end === -1) return null;
-          i = end;
-          continue;
-        }
-
-        if (input[i] === "[") {
-          const end = readBalancedSegment(input, i, "[", "]");
-          if (end === -1) return null;
-          i = end;
-          continue;
-        }
-
-        break;
-      }
-
-      items.push(input.slice(start, i).trim());
-      continue;
-    }
-
-    if (/\d/.test(char) || (char === "-" && /\d/.test(input[i + 1] ?? ""))) {
-      i++;
-
-      while (i < input.length && /[\d.]/.test(input[i])) {
-        i++;
-      }
-
-      items.push(input.slice(start, i).trim());
-      continue;
-    }
-
-    // si aparece un operador suelto a nivel superior, no intentamos partir por espacios
-    if ("+-*/%=<>".includes(char)) {
-      return null;
-    }
-
-    return null;
-  }
-
-  return items.length > 0 ? items : null;
-}
-
-function readBalancedSegment(
-  input: string,
-  startIndex: number,
-  openChar: string,
-  closeChar: string
-): number {
-  let depth = 0;
-  let inString = false;
-  let i = startIndex;
-
-  while (i < input.length) {
-    const char = input[i];
-
-    if (char === '"' && input[i - 1] !== "\\") {
-      inString = !inString;
-      i++;
-      continue;
-    }
-
-    if (!inString && char === openChar) {
-      depth++;
-    } else if (!inString && char === closeChar) {
-      depth--;
-
-      if (depth === 0) {
-        return i + 1;
-      }
-    }
-
-    i++;
-  }
-
-  return -1;
 }
