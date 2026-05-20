@@ -1,9 +1,14 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { RunProgramUseCase } from "../application/use-cases/RunProgramUseCase";
 import type { ConsoleLine } from "../domain/models/ConsoleLine";
 import { PseintProgramRunner } from "../infrastructure/execution/PseintProgramRunner";
-import { clearEditorState, loadEditorState, saveEditorState } from "../shared/storage/editorPersistence";
+import {
+  clearEditorState,
+  loadEditorState,
+  saveEditorState,
+} from "../shared/storage/editorPersistence";
 import { extractProgramName } from "../shared/utils/programMetadata";
+import { ExecutionSignal } from "../shared/execution/ExecutionSignal";
 import { ConsolePane } from "../ui/components/ConsolePane";
 import { EditorPane } from "../ui/components/EditorPane";
 import { Topbar } from "../ui/components/Topbar";
@@ -34,6 +39,7 @@ export default function App() {
   const runCounterRef = useRef(0);
   const activeRunIdRef = useRef<number | null>(null);
   const currentIoRef = useRef<ReactConsoleIO | null>(null);
+  const currentExecutionSignalRef = useRef<ExecutionSignal | null>(null);
 
   const runProgramUseCaseRef = useRef(
     new RunProgramUseCase(new PseintProgramRunner())
@@ -72,6 +78,9 @@ export default function App() {
     const runId = ++runCounterRef.current;
     activeRunIdRef.current = runId;
 
+    const executionSignal = new ExecutionSignal();
+    currentExecutionSignalRef.current = executionSignal;
+
     const io = new ReactConsoleIO({
       appendLine: (line) => {
         if (activeRunIdRef.current !== runId) {
@@ -93,11 +102,12 @@ export default function App() {
     currentIoRef.current = io;
 
     try {
-      await runProgramUseCaseRef.current.execute(code, io);
+      await runProgramUseCaseRef.current.execute(code, io, executionSignal);
     } finally {
       if (activeRunIdRef.current === runId) {
         activeRunIdRef.current = null;
         currentIoRef.current = null;
+        currentExecutionSignalRef.current = null;
         setPendingVariable(null);
         setIsRunning(false);
       }
@@ -109,9 +119,13 @@ export default function App() {
       return;
     }
 
+    currentExecutionSignalRef.current?.cancel();
+    currentExecutionSignalRef.current = null;
+
     currentIoRef.current?.stop();
     activeRunIdRef.current = null;
     currentIoRef.current = null;
+
     setPendingVariable(null);
     setInputValue("");
     setIsRunning(false);
@@ -213,7 +227,7 @@ FinAlgoritmo`;
   };
 
   const handleImportFileChange = async (
-    event: React.ChangeEvent<HTMLInputElement>
+    event: ChangeEvent<HTMLInputElement>
   ) => {
     const file = event.target.files?.[0];
 
@@ -280,11 +294,7 @@ FinAlgoritmo`;
       />
 
       <main className="workspace">
-        <EditorPane
-          code={code}
-          onChange={setCode}
-          errorLine={errorLine}
-        />
+        <EditorPane code={code} onChange={setCode} errorLine={errorLine} />
         <ConsolePane
           lines={consoleLines}
           pendingVariable={pendingVariable}
