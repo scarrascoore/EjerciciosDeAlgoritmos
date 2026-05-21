@@ -1,4 +1,4 @@
-# ◈ Simulador-Pseint-Web
+# ◈ SIMULADOR-Pseint-WEB
 
 Aplicación web inspirada en **PSeInt**, desarrollada con **React + TypeScript**, orientada a la escritura y futura ejecución de pseudocódigo desde el navegador mediante una interfaz dividida en dos paneles: **editor** y **consola de salida**.
 
